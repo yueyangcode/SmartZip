@@ -1,18 +1,30 @@
-# SmartZip Modern — 本机开发 test6
+# SmartZip — 开发预览 test9
+
+当前源码新增：SmartZip 名称、安装位置选择、独立进程的 GitHub Releases 更新提示。安装向导使用标准目录页；浏览选择 `D:\SoftWare` 后路径框直接显示 `D:\SoftWare\SmartZip`，选择已有的 `SmartZip` 文件夹不会重复嵌套。手动输入父目录后移出输入框也会补齐；取消浏览不改变原路径。确认真正安装前不会创建目标目录。暂限当前用户可写的本地 NTFS 固定磁盘。内部 Package/CLSID 和旧用户配置目录暂保留，以免破坏身份及配置兼容。
+
+当前构建命令：`pwsh -File .\build.ps1 -Signing Test`，输出 `dist\SmartZipSetup-test9-dirfix2.exe`（0.1.0.8，目录选择与冲突提示修正版）。旧的 preview/dirfix 安装包保留，不会被覆盖。这是中间开发产物，不要用作正式发布：覆盖升级/迁移尚未实现，仍拒绝已有安装；尚未完成另一台 Windows 11 测试。测试证书仍须交互确认，尚不满足公共 WinGet 静默分发要求。
+
+若所选父目录下已经有 `SmartZip` 文件夹（例如原版智能解压工具），目录页会显示具体冲突路径并阻止继续，不要求卸载或删除它。请选择另一个父目录，或使用默认的 `%LOCALAPPDATA%\Programs\SmartZip`。部署前仍会复查，日志分别记录目标路径、旧目录、产品状态、卸载项和 Package 状态，不把“目录已存在”混同于“已注册安装”。
+
+更新检查只在已安装软件使用时后台查询（每天最多一次），或从开始菜单“检查更新”手动触发。仅查询固定公开仓库最新正式 Release，确认后打开官方发布页，不自动下载/执行安装器，不内置 GitHub Token。网络检查不在 Explorer 菜单构建函数中运行。
+
+以下保留为 test7 的历史说明，不代表 test9 自选目录或升级已验收。
 
 **仅供开发测试。新版安装器尚未执行，不代表已通过本机或干净机器安装验收。**
-产物：`dist\SmartZipModernSetup-test6.exe`，版本 `0.1.0.5`。
-旧安装器及 TEST2-REPORT.md、TEST4-INSTALLED-VALIDATION.md 保留作历史证据，不能用它们代表 test6 行为。
+产物：`dist\SmartZipModernSetup-test7-slim.exe`，版本 `0.1.0.6`。
+旧安装器及 TEST2-REPORT.md、TEST4-INSTALLED-VALIDATION.md 保留作历史证据，不能用它们代表 test7-slim 行为。
 
 ## 构建
+
+test7-slim 是部署助手裁剪测试版，尚未验收真实安装/卸载。Journal 使用 JSON 源生成以兼容裁剪，生产助手的裁剪警告按错误处理。不删除后端或许可证，不改变 per-user 与证书权限设计；不支持覆盖现有安装。
 
 开发机需要 Windows x64、PowerShell 7.4+、.NET SDK 8.0.424 和首次下载依赖的网络。
 LLVM-mingw、Windows SDK 工具和 Inno Setup 6.2.2 使用已锁定 SHA-256 的便携下载。
 终端用户不需要这些开发工具。
 
 ```powershell
-pwsh -File .\build.ps1 -Signing Test -Version 0.1.0.5
-Get-FileHash .\dist\SmartZipModernSetup-test6.exe -Algorithm SHA256
+pwsh -File .\build.ps1 -Signing Test -Version 0.1.0.6
+Get-FileHash .\dist\SmartZipModernSetup-test7-slim.exe -Algorithm SHA256
 ```
 
 构建自动运行卸载时序源码回归检查、原生参数、COM 筛选、证书只读校验、故障注入回滚及真实跨进程管道测试，不安装产品或证书。
@@ -23,14 +35,14 @@ Get-FileHash .\dist\SmartZipModernSetup-test6.exe -Algorithm SHA256
 
 ## 安装结构与权限
 
-- 软件和 Package 均为 per-user，固定目录 `%LOCALAPPDATA%\Programs\SmartZip Modern\Versions\0.1.0.5`。
+- 软件和 Package 均为 per-user，固定目录 `%LOCALAPPDATA%\Programs\SmartZip Modern\Versions\0.1.0.6`。
 - 所有部署操作核验进程 SID 与当前会话桌面 Shell 的 SID 一致，拒绝无交互桌面、跨账号及跨会话。事务及卸载状态保存并复核 UserSid。
 - UAC 开启时继续拒绝管理员权限运行；仅当 EnableLUA=0 且令牌为 Default（未拆分）时允许同用户管理员进程。配置与令牌不一致时拒绝，不自动修改安全设置。
 - `CertificateTrustHelper.exe` 是独立原生 x64 程序，仅该程序使用 `runas` 请求 UAC。
 - 唯一证书存储是 `LocalMachine\TrustedPeople`，从不访问 Root 或导入 PFX。
 - 当前桌面用户进程负责文件、PackageManager 调用、COM 验证和 HKCU 产品状态；per-user 是归属范围，不等于进程一定没有管理员权限。
 - UAC 已关闭的管理员会话中，证书助手仍独立运行，但可能完全没有 UAC 弹窗；这不能证明证书步骤被跳过。安装器不会主动关闭 UAC，也不伪造受限令牌。
-- test6 是干净安装/卸载/重装版本；遇到现有安装会停止，不支持覆盖升级。
+- test7-slim 是干净安装/卸载/重装版本；遇到现有安装会停止，不支持覆盖升级。
 
 本机 test2 失败原因是预检查把管理员权限直接等同于错误账号。test3 修正此判断，不代表已经证明 UAC 关闭下的 MSIX/COM 部署成功；真实安装需单独批准。新增 11 个权限策略用例，构建时也会只读核验实际桌面和令牌。
 
@@ -74,12 +86,12 @@ Package 注册之后如果正常安装提交阶段再失败，退出钩子会执
 若系统拒绝清理或用户取消清理 UAC，必须报告回滚未完成，不能宣称成功或继续删除仍被 Package 引用的文件。
 
 这不是跨进程、证书库和 AppX 的系统级原子事务：断电、强杀、文件被占用以及系统拒绝回滚不能承诺完全无残留。
-日志保留在用户临时目录 `SmartZipModern-test6-<PID>.log`，用于确认每次补偿结果。
+日志保留在用户临时目录 `SmartZipModern-test7-slim-<PID>.log`，用于确认每次补偿结果。
 若清理失败且安装目录仍归本次事务所有，会尽力保留 `recovery.json`；这只是恢复证据，不会自动再次安装或修改系统。
 
 ## 正式卸载入口
 
-使用安装器生成的卸载项。test6 不在 InitializeUninstall 或退出事件中执行清理；普通启动先显示 Inno 原生确认框，选择“否”或关闭确认框时不启动部署/证书助手。
+使用安装器生成的卸载项。test7-slim 不在 InitializeUninstall 或退出事件中执行清理；普通启动先显示 Inno 原生确认框，选择“否”或关闭确认框时不启动部署/证书助手。
 确认后才在 `CurUninstallStepChanged(usUninstall)` 建立证书清理提权会话；UAC 被取消则不移除 Package。
 原用户移除本项目 Package，助手按所有权决定删除或保留证书，再由 Inno 删除该版本文件、快捷方式和卸载项。
 助手启动失败或返回非零时，事件调用 `Abort` 阻止 Inno 继续删除文件、快捷方式和卸载项。后续步骤中途失败可能已改变部分 Package/证书状态，不承诺完全原子回滚；保留日志和卸载入口用于诊断/重试。
@@ -91,7 +103,7 @@ Package 注册之后如果正常安装提交阶段再失败，退出钩子会执
 
 ## 解压与许可证
 
-test6 删除了旧设置 GUI 中不可达的右键/发送到注册代码，保留现有记事本编辑独立配置的设置入口。
+test7-slim 删除了旧设置 GUI 中不可达的右键/发送到注册代码，保留现有记事本编辑独立配置的设置入口。
 更正之前的分析：test5 的 Setting 已在旧 GUI 之前 ExitApp，旧注册按钮并非实际可点击；本次是删除死代码以防未来误恢复，不是修复已复现的用户注册表破坏。
 保留内置 7-Zip、解压逻辑，以及仍被编码选择对话框使用的提示处理函数。构建会检查解压引擎没有旧注册表/快捷方式写入 API。
 

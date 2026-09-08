@@ -1,4 +1,4 @@
-param([ValidateSet('Test','Release')][string]$Signing='Test',[string]$Version='0.1.0.5')
+param([ValidateSet('Test','Release')][string]$Signing='Test',[string]$Version='0.1.0.8')
 $ErrorActionPreference='Stop'
 if($Signing -ne 'Test'){throw 'This branch only builds the explicitly requested local-development signing channel.'}
 $env:DOTNET_GENERATE_ASPNET_CERTIFICATE='false'
@@ -8,6 +8,9 @@ $root=$PSScriptRoot
 Set-Location -LiteralPath $root
 & "$root\tests\UninstallOrder.Tests.ps1"
 & "$root\tests\LegacyRegistration.Tests.ps1"
+& "$root\tests\ChineseInstaller.Tests.ps1"
+dotnet run --project "$root\tests\InstallPathTests" -c Release
+if($LASTEXITCODE -ne 0){throw 'Install path tests failed.'}
 function CheckExit([string]$step){if($LASTEXITCODE -ne 0){throw "$step failed ($LASTEXITCODE)"}}
 function Sign([string]$path){& "$sdk\signtool.exe" sign /fd SHA256 /f $pfx /p $password $path;CheckExit "sign $([IO.Path]::GetFileName($path))"}
 & "$root\bootstrap.ps1"
@@ -18,6 +21,7 @@ if(!(Get-ChildItem vendor -Directory -Filter 'SmartZip-*')){Expand-Archive downl
 $llvm="$root\.tools\llvm-mingw-20260826-ucrt-x86_64\bin"
 $sdk="$root\.tools\sdk\c\bin\10.0.26100.0\x64"
 $inno="$root\.tools\inno\tools\ISCC.exe"
+& "$root\tests\DirectoryWizard.Tests.ps1"
 $payload="$root\build\payload"
 New-Item -ItemType Directory -Force -Path $payload,"$payload\Engine","$payload\Backend","$payload\Assets","$payload\Licenses","$payload\Sources","$root\build\identity","$root\build\tests","$root\dist","$root\.private" | Out-Null
 & "$root\packaging\MakeAssets.ps1" -Destination "$payload\Assets"
@@ -124,10 +128,12 @@ internal static class ProductIdentity {
  internal const long NotAfterTicks=$($cert.NotAfter.ToUniversalTime().Ticks)L;
 }
 "@ | Set-Content src\DeploymentHelper\ProductIdentity.g.cs -Encoding utf8
-dotnet publish src\DeploymentHelper\DeploymentHelper.csproj -c Release -o "$root\build\helper" -p:DebugType=None -p:DebugSymbols=false --nologo
+dotnet publish src\DeploymentHelper\DeploymentHelper.csproj -c Release -o "$root\build\helper" -p:PublishTrimmed=true -p:TrimMode=link -p:TrimmerSingleWarn=false -p:TreatWarningsAsErrors=true -p:ILLinkTreatWarningsAsErrors=true -p:DebugType=None -p:DebugSymbols=false --nologo
 CheckExit 'deployment helper'
 dotnet run --project tests\TransactionTests\TransactionTests.csproj -c Release --no-launch-profile
 CheckExit 'fault-injected transaction tests (no package/certificate writes)'
+dotnet run --project tests\JournalTests\JournalTests.csproj -c Release --no-launch-profile
+CheckExit 'source-generated journal tests (reflection disabled)'
 dotnet run --project tests\PipeTests\PipeTests.csproj -c Release --no-launch-profile
 CheckExit 'real cross-process pipe regression tests (no elevation/certificate/package writes)'
 Copy-Item "$root\.tools\inno\tools\license.txt" "$payload\Licenses\InnoSetup.txt" -Force
@@ -146,7 +152,7 @@ Sign "$payload\Identity.msix";Sign "$payload\SmartZip.exe";Sign "$payload\SmartZ
 if($Signing -eq 'Release'){& "$sdk\signtool.exe" verify /pa "$payload\Identity.msix";CheckExit 'production certificate trust'}
 & "$inno" "/DProductVersion=$Version" "/DTestSigned=$testFlag" installer\SmartZipModern.iss
 CheckExit 'single-file installer'
-Sign "$root\dist\SmartZipModernSetup-test6.exe"
-Get-Item dist\SmartZipModernSetup-test6.exe | Select-Object FullName,Length
-Get-FileHash dist\SmartZipModernSetup-test6.exe -Algorithm SHA256
+Sign "$root\dist\SmartZipSetup-test9-dirfix2.exe"
+Get-Item dist\SmartZipSetup-test9-dirfix2.exe | Select-Object FullName,Length
+Get-FileHash dist\SmartZipSetup-test9-dirfix2.exe -Algorithm SHA256
 Write-Host 'BUILD ONLY. Installer has NOT been executed. No package or certificate was registered.'

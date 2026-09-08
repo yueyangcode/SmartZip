@@ -9,7 +9,7 @@
   <NMakeBuildCommandLine>pwsh -NoProfile -File "$(ProjectDir)build.ps1" -Signing Test</NMakeBuildCommandLine>
   <NMakeReBuildCommandLine>$(NMakeBuildCommandLine)</NMakeReBuildCommandLine>
   <NMakeCleanCommandLine>cmd /c echo Clean is intentionally non-destructive. Build overwrites generated outputs.</NMakeCleanCommandLine>
-  <NMakeOutput>$(ProjectDir)dist\SmartZipModernSetup-test6.exe</NMakeOutput>
+  <NMakeOutput>$(ProjectDir)dist\SmartZipSetup-test9-preview.exe</NMakeOutput>
   <NMakePreprocessorDefinitions>UNICODE;_UNICODE;_WIN32_WINNT=0x0A00</NMakePreprocessorDefinitions>
  </PropertyGroup>
  <ItemGroup><ClCompile Include="src\ContextMenu.cpp"/><ClCompile Include="src\Launcher.cpp"/><ClCompile Include="src\CertificateTrustHelper.cpp"/><ClCompile Include="src\NativeTests.cpp"/><ClInclude Include="src\Common.h"/></ItemGroup>

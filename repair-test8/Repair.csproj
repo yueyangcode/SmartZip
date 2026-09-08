@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>SmartZip-Repair-test8</AssemblyName>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained><PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <ApplicationManifest>../src/DeploymentHelper/app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup><Compile Include="../src/DeploymentHelper/UserContext.cs" Link="UserContext.cs" /></ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../LICENSE" LogicalName="Licenses.SmartZip.txt" />
+    <EmbeddedResource Include="../build/payload/Licenses/DotNet-MIT.txt" LogicalName="Licenses.DotNet-MIT.txt" />
+    <EmbeddedResource Include="../build/payload/Licenses/DotNet-ThirdParty.txt" LogicalName="Licenses.DotNet-ThirdParty.txt" />
+    <EmbeddedResource Include="../licenses/CsWinRT.txt" LogicalName="Licenses.CsWinRT.txt" />
+  </ItemGroup>
+</Project>

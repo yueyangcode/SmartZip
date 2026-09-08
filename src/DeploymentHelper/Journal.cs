@@ -2,7 +2,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 internal sealed record Journal(string Nonce, bool CertificateCreated, string UserSid,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? InstallRoot = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? InstallRoot = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] PreviousInstall? Previous = null);
+
+internal sealed record PreviousInstall(string Version, string Nonce, bool CertificateCreated, string PackageSha256);
 
 [JsonSerializable(typeof(Journal))]
 internal partial class JournalContext : JsonSerializerContext { }

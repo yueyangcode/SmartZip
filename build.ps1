@@ -1,6 +1,16 @@
-param([ValidateSet('Test','Release')][string]$Signing='Test',[string]$Version='0.1.0.8')
+param([ValidateSet('Test','Release')][string]$Signing='Test',[string]$Version='0.1.0.9',
+ [ValidateSet('','after-stage','after-package','before-commit','after-state')][string]$FaultAt='')
 $ErrorActionPreference='Stop'
-if($Signing -ne 'Test'){throw 'This branch only builds the explicitly requested local-development signing channel.'}
+$parsedVersion=$null
+if(![version]::TryParse($Version,[ref]$parsedVersion) -or $parsedVersion.Revision -lt 0 -or $parsedVersion.ToString(4) -cne $Version -or @($parsedVersion.Major,$parsedVersion.Minor,$parsedVersion.Build,$parsedVersion.Revision | Where-Object {$_ -gt 65535}).Count){throw 'Use an exact four-part MSIX version with each component 0..65535.'}
+if($Signing -eq 'Release'){
+  if($FaultAt){throw 'Fault injection is forbidden in Release builds.'}
+  if(!$env:SMARTZIP_SIGN_PFX -or !$env:SMARTZIP_SIGN_PASSWORD -or !$env:SMARTZIP_PUBLISHER){throw 'Release blocked: supply a trusted code-signing PFX, SMARTZIP_SIGN_PASSWORD and exact SMARTZIP_PUBLISHER. No test-key fallback.'}
+  $releaseCert=[Security.Cryptography.X509Certificates.X509Certificate2]::new($env:SMARTZIP_SIGN_PFX,$env:SMARTZIP_SIGN_PASSWORD,[Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet)
+  $releaseChain=[Security.Cryptography.X509Certificates.X509Chain]::new()
+  $releaseChain.ChainPolicy.ApplicationPolicy.Add([Security.Cryptography.Oid]::new('1.3.6.1.5.5.7.3.3'))
+  if(!$releaseCert.HasPrivateKey -or $releaseCert.Subject -ne $env:SMARTZIP_PUBLISHER -or $releaseCert.Subject -eq $releaseCert.Issuer -or !$releaseChain.Build($releaseCert)){throw 'Release certificate must have a private key, match the Publisher and validate to existing system trust. No certificate is imported.'}
+}
 $env:DOTNET_GENERATE_ASPNET_CERTIFICATE='false'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE='1'
@@ -11,8 +21,13 @@ Set-Location -LiteralPath $root
 & "$root\tests\ChineseInstaller.Tests.ps1"
 dotnet run --project "$root\tests\InstallPathTests" -c Release
 if($LASTEXITCODE -ne 0){throw 'Install path tests failed.'}
+dotnet run --project "$root\tests\UpgradeTests" -c Release
+if($LASTEXITCODE -ne 0){throw 'Upgrade tests failed.'}
 function CheckExit([string]$step){if($LASTEXITCODE -ne 0){throw "$step failed ($LASTEXITCODE)"}}
-function Sign([string]$path){& "$sdk\signtool.exe" sign /fd SHA256 /f $pfx /p $password $path;CheckExit "sign $([IO.Path]::GetFileName($path))"}
+function Sign([string]$path){
+  $timestampArgs=if($Signing -eq 'Release'){@('/tr','http://timestamp.digicert.com','/td','SHA256')}else{@()}
+  & "$sdk\signtool.exe" sign /fd SHA256 /f $pfx /p $password @timestampArgs $path;CheckExit "sign $([IO.Path]::GetFileName($path))"
+}
 & "$root\bootstrap.ps1"
 foreach($a in @(@('inno','inno'),@('sdk','sdk'),@('sdk-x64','sdk-x64'))){if(!(Test-Path ".tools\$($a[1])")){Expand-Archive "downloads\$($a[0]).zip" ".tools\$($a[1])"}}
 if(!(Test-Path '.tools\llvm-mingw-20260826-ucrt-x86_64')){Expand-Archive downloads\llvm.zip .tools}
@@ -64,8 +79,9 @@ if($Signing -eq 'Test'){
 }else{
   if(!$env:SMARTZIP_SIGN_PFX -or !$env:SMARTZIP_SIGN_PASSWORD -or !$env:SMARTZIP_PUBLISHER){throw 'Release requires SMARTZIP_SIGN_PFX, SMARTZIP_SIGN_PASSWORD and SMARTZIP_PUBLISHER. No test-key fallback.'}
   $pfx=$env:SMARTZIP_SIGN_PFX;$password=$env:SMARTZIP_SIGN_PASSWORD;$publisher=$env:SMARTZIP_PUBLISHER
-  $certHash='';$testLiteral='false';$testFlag='0'
-  if(Test-Path "$payload\Identity.cer"){Remove-Item -LiteralPath "$payload\Identity.cer"}
+  $cert=$releaseCert
+  [IO.File]::WriteAllBytes("$payload\Identity.cer",$cert.Export([Security.Cryptography.X509Certificates.X509ContentType]::Cert))
+  $certHash=(Get-FileHash "$payload\Identity.cer" -Algorithm SHA256).Hash;$testLiteral='false';$testFlag='0'
 }
 $xmlPublisher=[Security.SecurityElement]::Escape($publisher)
 foreach($pair in @(@('AppxManifest.xml.in',"$root\build\identity\AppxManifest.xml"),@('launcher.manifest.in',"$root\build\launcher.manifest"))){
@@ -92,6 +108,7 @@ static constexpr FILETIME CertificateNotAfter={ $($afterFileTime -band 429496729
 '1 24 "certificate-helper.manifest"'|Set-Content build\certificate-helper.rc -Encoding ascii
 & "$llvm\llvm-windres.exe" -I "$root\packaging" build\certificate-helper.rc -O coff -o build\certificate-helper.res.o
 CheckExit 'certificate helper manifest'
+if($Signing -eq 'Test'){
 & "$llvm\x86_64-w64-mingw32-clang++.exe" @common -I build -municode -mwindows src\CertificateTrustHelper.cpp build\certificate-helper.res.o -o "$payload\CertificateTrustHelper.exe" -lcrypt32 -ladvapi32 -lshell32
 CheckExit 'native certificate helper'
 Sign "$payload\CertificateTrustHelper.exe"
@@ -99,6 +116,10 @@ $trustHash=(Get-FileHash "$payload\CertificateTrustHelper.exe").Hash
 & "$llvm\x86_64-w64-mingw32-clang++.exe" @common -I build -DCERTIFICATE_SELF_TEST -municode src\CertificateTrustHelper.cpp -o build\tests\CertificateTests.exe -lcrypt32 -ladvapi32 -lshell32
 CheckExit 'certificate test build'
 & .\build\tests\CertificateTests.exe;CheckExit 'certificate read-only tests'
+}else{
+  $trustHash=''
+  if(Test-Path -LiteralPath "$payload\CertificateTrustHelper.exe"){Remove-Item -LiteralPath "$payload\CertificateTrustHelper.exe"}
+}
 & "$llvm\x86_64-w64-mingw32-clang++.exe" @common -shared src\ContextMenu.cpp -o "$payload\SmartZipContextMenu.dll" -lole32 -lshell32 -lshlwapi -luuid
 CheckExit 'COM DLL'
 & "$llvm\x86_64-w64-mingw32-clang++.exe" @common -municode -mwindows src\Launcher.cpp build\launcher.res.o -o "$payload\SmartZip.exe" -lshell32
@@ -120,7 +141,8 @@ internal static class ProductIdentity {
  internal const string Name="SmartZip.Modern";
  internal const string Publisher="$escaped";
  internal const string Version="$Version";
- internal const bool TestSigned=$testLiteral;
+ internal static readonly bool TestSigned=$testLiteral;
+ internal const string FaultAt="$FaultAt";
  internal const string CertificateSha256="$certHash";
  internal const string CertificateThumbprint="$($cert.Thumbprint)";
  internal const string TrustHelperSha256="$trustHash";
@@ -150,9 +172,17 @@ Copy-Item build\helper\DeploymentHelper.exe "$payload" -Force
 CheckExit 'identity package'
 Sign "$payload\Identity.msix";Sign "$payload\SmartZip.exe";Sign "$payload\SmartZipContextMenu.dll";Sign "$payload\DeploymentHelper.exe"
 if($Signing -eq 'Release'){& "$sdk\signtool.exe" verify /pa "$payload\Identity.msix";CheckExit 'production certificate trust'}
-& "$inno" "/DProductVersion=$Version" "/DTestSigned=$testFlag" installer\SmartZipModern.iss
+$faultSuffix=if($FaultAt){"-fault-$FaultAt"}else{''}
+& "$inno" "/DProductVersion=$Version" "/DTestSigned=$testFlag" "/DSetupSuffix=$faultSuffix" installer\SmartZipModern.iss
 CheckExit 'single-file installer'
-Sign "$root\dist\SmartZipSetup-test9-dirfix2.exe"
-Get-Item dist\SmartZipSetup-test9-dirfix2.exe | Select-Object FullName,Length
-Get-FileHash dist\SmartZipSetup-test9-dirfix2.exe -Algorithm SHA256
+if($Signing -eq 'Test'){
+  & "$inno" /O- /Q "/DProductVersion=$Version" /DTestSigned=0 installer\SmartZipModern.iss
+  CheckExit 'production wizard syntax only (no production installer emitted)'
+}
+$setupName=if($Signing -eq 'Test'){"SmartZipSetup-$Version-test$faultSuffix.exe"}else{"SmartZipSetup-$Version-x64.exe"}
+Sign "$root\dist\$setupName"
+if($Signing -eq 'Release'){& "$sdk\signtool.exe" verify /pa "$root\dist\$setupName";CheckExit 'production installer trust'}
+if($Signing -eq 'Test' -and !$FaultAt){& "$root\tests\ReleaseGate.Tests.ps1" -TestInstaller "$root\dist\$setupName" -Version $Version}
+Get-Item "dist\$setupName" | Select-Object FullName,Length
+Get-FileHash "dist\$setupName" -Algorithm SHA256 | Format-List Hash
 Write-Host 'BUILD ONLY. Installer has NOT been executed. No package or certificate was registered.'

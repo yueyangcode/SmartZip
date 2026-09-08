@@ -15,10 +15,10 @@ function Assert-UninstallOrder([string]$Source) {
     if ($body -notmatch '(?is)begin\s+if CurUninstallStep <> usUninstall then exit;') {
         throw 'Cleanup must be gated to the confirmed usUninstall stage.'
     }
-    if ($body -notmatch "(?is)CleanupSucceeded := Exec\(ExpandConstant\('[^']+DeploymentHelper.exe'\), 'uninstall', '', SW_HIDE, ewWaitUntilTerminated, Code\);") {
+    if ($body -notmatch "(?is)Arguments := 'uninstall';\s+if UninstallSilent then Arguments := Arguments \+ ' --no-ui';\s+CleanupSucceeded := Exec\(ExpandConstant\('[^']+DeploymentHelper.exe'\), Arguments, '', SW_HIDE, ewWaitUntilTerminated, Code\);") {
         throw 'Uninstall must wait for the exact installed helper.'
     }
-    if ($body -notmatch '(?is)if CleanupSucceeded then CleanupSucceeded := Code = 0;\s+if not CleanupSucceeded then begin\s+Log\([^\r\n]+;\s+MsgBox\([^\r\n]+;\s+Abort;\s+end;') {
+    if ($body -notmatch '(?is)if CleanupSucceeded then CleanupSucceeded := Code = 0;\s+if not CleanupSucceeded then begin\s+Log\([^\r\n]+;\s+SuppressibleMsgBox\([^\r\n]+;\s+Abort;\s+end;') {
         throw 'Helper launch failure and nonzero exit must abort before Inno deletion.'
     }
     if ([regex]::Matches($code, "'uninstall'").Count -ne 1) { throw 'Unexpected additional uninstall dispatch.' }

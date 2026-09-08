@@ -1,130 +1,54 @@
-# SmartZip — 开发预览 test9
+# SmartZip
 
-当前源码新增：SmartZip 名称、安装位置选择、独立进程的 GitHub Releases 更新提示。安装向导使用标准目录页；浏览选择 `D:\SoftWare` 后路径框直接显示 `D:\SoftWare\SmartZip`，选择已有的 `SmartZip` 文件夹不会重复嵌套。手动输入父目录后移出输入框也会补齐；取消浏览不改变原路径。确认真正安装前不会创建目标目录。暂限当前用户可写的本地 NTFS 固定磁盘。内部 Package/CLSID 和旧用户配置目录暂保留，以免破坏身份及配置兼容。
+Windows 11 原生现代右键菜单中的「智能解压」。内置独立的 7-Zip 后端，无需另装 WinRAR 或 7-Zip，不改变现有压缩软件和旧式菜单。
 
-当前构建命令：`pwsh -File .\build.ps1 -Signing Test`，输出 `dist\SmartZipSetup-test9-dirfix2.exe`（0.1.0.8，目录选择与冲突提示修正版）。旧的 preview/dirfix 安装包保留，不会被覆盖。这是中间开发产物，不要用作正式发布：覆盖升级/迁移尚未实现，仍拒绝已有安装；尚未完成另一台 Windows 11 测试。测试证书仍须交互确认，尚不满足公共 WinGet 静默分发要求。
+## 当前状态
 
-若所选父目录下已经有 `SmartZip` 文件夹（例如原版智能解压工具），目录页会显示具体冲突路径并阻止继续，不要求卸载或删除它。请选择另一个父目录，或使用默认的 `%LOCALAPPDATA%\Programs\SmartZip`。部署前仍会复查，日志分别记录目标路径、旧目录、产品状态、卸载项和 Package 状态，不把“目录已存在”混同于“已注册安装”。
+- **0.1.0.8**：用户反馈本机及另一台 Windows 11 测试通过，见 [验收记录](docs/TESTED-BASELINE.md)。
+- **0.1.0.9**：新增同目录覆盖升级与失败恢复，属于开发测试版。已运行代码层测试，真实覆盖升级、回滚和升级后卸载尚待验收。
+- 正式可信签名尚未提供；公共 WinGet 包尚未提交。GitHub 发布准备仅为开发版草稿。
 
-更新检查只在已安装软件使用时后台查询（每天最多一次），或从开始菜单“检查更新”手动触发。仅查询固定公开仓库最新正式 Release，确认后打开官方发布页，不自动下载/执行安装器，不内置 GitHub Token。网络检查不在 Explorer 菜单构建函数中运行。
+## 使用与安装
 
-以下保留为 test7 的历史说明，不代表 test9 自选目录或升级已验收。
+支持 Windows 11 x64（Build 22621 或更新版本）。双击 EXE 安装；浏览选择父目录后，向导自动补齐 SmartZip 文件夹并显示最终路径。安装限当前用户可写的本地 NTFS 固定磁盘。
 
-**仅供开发测试。新版安装器尚未执行，不代表已通过本机或干净机器安装验收。**
-产物：`dist\SmartZipModernSetup-test7-slim.exe`，版本 `0.1.0.6`。
-旧安装器及 TEST2-REPORT.md、TEST4-INSTALLED-VALIDATION.md 保留作历史证据，不能用它们代表 test7-slim 行为。
+测试版首次安装需同意专用测试证书：仅证书助手请求管理员权限，将公钥加入 LocalMachine\\TrustedPeople，不进入 Root、不导入私钥。软件及 Package 为 per-user。安装前已有的证书不接管；本项目创建的证书按所有权和其他用户使用情况清理。
 
-## 构建
+右键 ZIP、RAR、7Z、CAB、BZ2、GZ、GZIP、TAR 或支持的分卷文件，点击「智能解压」。支持多选及 Unicode/中文、空格、特殊字符路径。普通文件、真实文件夹和压缩包混合普通文件的选择不显示该命令。新版 Context menu 设置页是否存在由 Windows 版本与功能推出状态决定，本软件不会开启 Windows Feature。
 
-test7-slim 是部署助手裁剪测试版，尚未验收真实安装/卸载。Journal 使用 JSON 源生成以兼容裁剪，生产助手的裁剪警告按错误处理。不删除后端或许可证，不改变 per-user 与证书权限设计；不支持覆盖现有安装。
+开始菜单提供「SmartZip 设置」「检查更新」「卸载 SmartZip」。更新检查每天最多一次，也可手动触发；仅查询本仓库最新正式 Release，确认后打开发布页，不自动下载或执行安装器，不包含 GitHub Token。
 
-开发机需要 Windows x64、PowerShell 7.4+、.NET SDK 8.0.424 和首次下载依赖的网络。
-LLVM-mingw、Windows SDK 工具和 Inno Setup 6.2.2 使用已锁定 SHA-256 的便携下载。
-终端用户不需要这些开发工具。
+## 升级和卸载
+
+0.1.0.9 可对身份完整的 0.1.0.8 或更新版本进行**同目录、同证书**升级，自动使用原安装位置，不需要先卸载。拒绝同版重装、降级、目录迁移及不完整安装，不覆盖无有效产品身份的同名文件夹。
+
+新版写入 Versions 子目录，旧版及用户配置不动。失败恢复先还原旧 Package，再恢复产品状态、卸载文件和快捷方式；恢复被系统拒绝时保留文件/备份并报告失败。旧版本目录保留到正常卸载，暂不自动清除被 Shell 占用的 DLL。断电/强杀恢复不承诺自动完成。
+
+通过正常卸载入口卸载；配置仍保留于原 UserData 目录。不要手动删除安装目录或使用强制清理代替正常卸载。不会删除原版 SmartZip、旧 UnZip 菜单、用户已有的 7-Zip/WinRAR。
+
+升级的真实验收步骤和故障测试边界见 [升级验收](docs/UPGRADE-TESTS.md)。
+
+## 从源码构建
+
+开发机需要 Windows x64、PowerShell 7.4+、.NET SDK 8.0.424，首次构建需联网下载锁定版本及 SHA-256 的依赖。终端用户不需要开发工具。
 
 ```powershell
-pwsh -File .\build.ps1 -Signing Test -Version 0.1.0.6
-Get-FileHash .\dist\SmartZipModernSetup-test7-slim.exe -Algorithm SHA256
+pwsh -File .\\build.ps1 -Signing Test -Version 0.1.0.9
+Get-FileHash .\\dist\\SmartZipSetup-0.1.0.9-test.exe -Algorithm SHA256
 ```
 
-构建自动运行卸载时序源码回归检查、原生参数、COM 筛选、证书只读校验、故障注入回滚及真实跨进程管道测试，不安装产品或证书。
-`SmartZipModern.sln` 的 Makefile 项目调用同一脚本。
-额外解压测试：开发机安装 Python 3 后运行 `python .\tests\smoke.py`。
-该分支拒绝 Release 构建；公开发行签名不是本阶段范围。
-`.private` 中的私钥和 DPAPI 密码文件不能分享，未包含在安装包中。
+输出单文件安装器；构建不安装软件、Package 或证书。脚本同时运行原生参数、COM 文件筛选、目录页、源生成 JSON、跨进程管道、升级回滚顺序及发布安全门禁测试。模拟/独立 COM 测试不代表 Explorer 或真实安装验收。VS Solution 调用同一构建脚本。
 
-## 安装结构与权限
+正式构建入口为 `-Signing Release`，要求可信签名材料，没有自签名回退。正式版不包含证书提权助手，也不自动导入证书。签名、GitHub 草稿与 WinGet 清单流程见 [发布说明](docs/RELEASE.md)。测试证书到正式证书的迁移不属于本版自动升级范围。
 
-- 软件和 Package 均为 per-user，固定目录 `%LOCALAPPDATA%\Programs\SmartZip Modern\Versions\0.1.0.6`。
-- 所有部署操作核验进程 SID 与当前会话桌面 Shell 的 SID 一致，拒绝无交互桌面、跨账号及跨会话。事务及卸载状态保存并复核 UserSid。
-- UAC 开启时继续拒绝管理员权限运行；仅当 EnableLUA=0 且令牌为 Default（未拆分）时允许同用户管理员进程。配置与令牌不一致时拒绝，不自动修改安全设置。
-- `CertificateTrustHelper.exe` 是独立原生 x64 程序，仅该程序使用 `runas` 请求 UAC。
-- 唯一证书存储是 `LocalMachine\TrustedPeople`，从不访问 Root 或导入 PFX。
-- 当前桌面用户进程负责文件、PackageManager 调用、COM 验证和 HKCU 产品状态；per-user 是归属范围，不等于进程一定没有管理员权限。
-- UAC 已关闭的管理员会话中，证书助手仍独立运行，但可能完全没有 UAC 弹窗；这不能证明证书步骤被跳过。安装器不会主动关闭 UAC，也不伪造受限令牌。
-- test7-slim 是干净安装/卸载/重装版本；遇到现有安装会停止，不支持覆盖升级。
+## 结构与许可证
 
-本机 test2 失败原因是预检查把管理员权限直接等同于错误账号。test3 修正此判断，不代表已经证明 UAC 关闭下的 MSIX/COM 部署成功；真实安装需单独批准。新增 11 个权限策略用例，构建时也会只读核验实际桌面和令牌。
+原生 x64 IExplorerCommand → 同目录 SmartZip.exe → SmartZip AHK 引擎 → 私有 7-Zip 后端。不使用 Contextmenu.exe、Ctrl+C、cmd.exe 或 PATH 查找。
 
-test4 修复 test3 的 `Pipe hasn't been connected yet`：仅在管道连接及对端 PID 验证后创建读写流和启用 AutoFlush。
-取消或断连时先关闭管道，再清理流，避免清理时刷新未连接管道掩盖原始异常；重复 Dispose 安全。
-`tests/PipeTests` 直接编译生产 TrustBroker.cs，通过真实 Windows 管道及独立子进程验证协议、身份拒绝、断连、取消和句柄释放；不是模拟内存队列。
-测试还会先复现旧初始化顺序的异常，以确认回归测试能抓到原缺陷。
-可选 `--native-readonly <助手路径>` 仅用于已经处于 UAC-off 管理员会话的开发机，调用校验哈希后的实际助手，发送 OPEN/ROLLBACK；不发送 BEGIN/RELEASE，不更改证书或 Package。
-这些测试不替代真实安装、证书导入、MSIX、Settings 和卸载验收。
+- 本项目及 SmartZip 上游：MIT。
+- AutoHotkey：GPL，另含 PCRE 等许可。
+- 7-Zip：LGPL/BSD/unRAR 等许可及限制。
 
-## 证书助手边界
+许可证、通知和对应上游源码随安装包提供，详见 [ThirdPartyNotices](ThirdPartyNotices.md)。`.private` 私钥、密码文件及本机日志不得提交或分享。
 
-公钥 DER 内嵌于助手，SHA-256、SHA-1 指纹、Subject、起止有效期和代码签名 EKU 固定在构建中。
-助手验证证书自身签名；添加信任必须处于有效期内。清理允许移除已过期但指纹及所有权仍匹配的项目证书。
-命令行只接受固定会话格式、随机 nonce 和调用进程 PID；不接受路径、证书文件或任意命令。
-通信管道 ACL 限制为原用户与管理员。普通进程核验客户端 PID 与提权进程一致；助手核验管道服务端 PID，从原进程令牌取得用户 SID，
-不会把提权账号当成软件安装账号。
-
-原用户进程先校验助手文件的编译期 SHA-256，再请求提权。
-提权助手不复制软件、不改 HKCU、不注册 Package、不启动其他程序。
-它只操作固定证书及 `HKLM\SOFTWARE\SmartZipModernTestTrust\<固定指纹>` 下的所有权/用户使用记录。
-
-证书安装前存在且没有项目所有权记录：不会接管或删除。
-证书由本项目创建：记录创建者和本项目各用户的使用状态。
-卸载只有在本次安装确实创建、创建者 SID 匹配、指纹/证书字节匹配且无其他用户使用记录时才删除。
-有其他用户使用时保留；这种保守保留不等于清理失败。不要将此开发证书复用于其他软件。
-
-## 部署和回滚
-
-1. Inno `PrepareToInstall` 提取临时 payload，预检干净基线和固定路径。
-2. 普通助手创建带本次 nonce 所有权标记的安装目录，复制文件。
-3. 建立提权证书会话，添加专用信任或识别已有信任。
-4. 原用户调用 `AddPackageByUriAsync`，ExternalLocation 指向本用户版本目录。
-5. 验证 Package 身份、Windows PackagedCom 注册、注册后的菜单 manifest，以及实际 IExplorerCommand COM 激活。
-6. 全部成功后才让 Inno 创建卸载入口和快捷方式，最后提交 HKCU 产品状态。
-
-第 3–5 步失败：RemovePackageAsync → 同一个仍在运行的提权会话撤销本次新增信任/记录 → 删除带本次标记的安装目录。
-不会先留下卸载项和快捷方式再发现 Package 部署失败。
-原证书不删除，所有权不明或路径出现重解析点时拒绝危险删除。
-Package 注册之后如果正常安装提交阶段再失败，退出钩子会执行补偿清理，包括 Inno 元数据；证书清理可能再次请求 UAC。
-若系统拒绝清理或用户取消清理 UAC，必须报告回滚未完成，不能宣称成功或继续删除仍被 Package 引用的文件。
-
-这不是跨进程、证书库和 AppX 的系统级原子事务：断电、强杀、文件被占用以及系统拒绝回滚不能承诺完全无残留。
-日志保留在用户临时目录 `SmartZipModern-test7-slim-<PID>.log`，用于确认每次补偿结果。
-若清理失败且安装目录仍归本次事务所有，会尽力保留 `recovery.json`；这只是恢复证据，不会自动再次安装或修改系统。
-
-## 正式卸载入口
-
-使用安装器生成的卸载项。test7-slim 不在 InitializeUninstall 或退出事件中执行清理；普通启动先显示 Inno 原生确认框，选择“否”或关闭确认框时不启动部署/证书助手。
-确认后才在 `CurUninstallStepChanged(usUninstall)` 建立证书清理提权会话；UAC 被取消则不移除 Package。
-原用户移除本项目 Package，助手按所有权决定删除或保留证书，再由 Inno 删除该版本文件、快捷方式和卸载项。
-助手启动失败或返回非零时，事件调用 `Abort` 阻止 Inno 继续删除文件、快捷方式和卸载项。后续步骤中途失败可能已改变部分 Package/证书状态，不承诺完全原子回滚；保留日志和卸载入口用于诊断/重试。
-`/SILENT`、`/VERYSILENT` 保持 Inno 的既有语义：显式静默卸载不显示启动确认，但仍执行同一清理门控并在失败时中止。
-源码回归检查会拒绝旧初始化钩子、缺失阶段判断、忽略助手退出码、缺失 Abort 和异步执行五种退化。它不替代真实点击“否”、取消 UAC 和正常卸载的验收。
-此时序依据项目实际使用的 [Inno 6.2.2 源码](https://github.com/jrsoftware/issrc/blob/is-6_2_2/Projects/Uninstall.pas#L620-L655) 和 [Abort 文档](https://jrsoftware.org/ishelp/topic_isxfunc_abort.htm)。
-用户解压配置默认保留在 `%LOCALAPPDATA%\SmartZip Modern\UserData`，避免删除密码等个人配置。
-不删除既有 SmartZip、旧 UnZip 菜单、现有 7-Zip/WinRAR 或其他 Shell 扩展。
-
-## 解压与许可证
-
-test7-slim 删除了旧设置 GUI 中不可达的右键/发送到注册代码，保留现有记事本编辑独立配置的设置入口。
-更正之前的分析：test5 的 Setting 已在旧 GUI 之前 ExitApp，旧注册按钮并非实际可点击；本次是删除死代码以防未来误恢复，不是修复已复现的用户注册表破坏。
-保留内置 7-Zip、解压逻辑，以及仍被编码选择对话框使用的提示处理函数。构建会检查解压引擎没有旧注册表/快捷方式写入 API。
-
-原生 `IExplorerCommand` → 同目录 `SmartZip.exe x ...` → AHK SmartZip 源码 → 私有官方 7-Zip 26.03。
-不用 Contextmenu.exe、Ctrl+C、cmd.exe 或 PATH 查找，不硬编码个人软件路径。
-支持 zip/rar/7z/cab/bz2/gz/gzip/tar、数字分卷、SmartZip 识别的 partN.rar；普通文件、真实文件夹、混合选择隐藏。
-SmartZip MIT、AHK GPL、7-Zip LGPL/BSD/unRAR 约束和对应源代码都随包提供。
-详见 [ThirdPartyNotices](ThirdPartyNotices.md)。
-
-## 待批准后的验收
-
-- 首次安装：记录 UAC、测试证书许可、Package/COM 和 App extensions 默认状态。
-- 故障测试：取消 UAC、使 Package 部署失败、使 COM 验证失败；对比安装前后的文件、注册项和证书。
-- 功能：zip/rar/7z/cab/数字分卷；中文、emoji、空格、括号、&、多选；txt/docx/图片/文件夹/混合选择应隐藏。
-- 卸载：专用文件、Package、COM、HKCU、快捷方式、卸载项及按所有权可删除的证书；原环境哈希不变。
-- 先取消一次卸载：确认框出现前后及选择“否”后，Package/COM/证书/文件/卸载项均应保持不变；之后再正常卸载。UAC 取消测试仅在 UAC 已启用的环境进行，不为测试更改本机 UAC。
-- 重装：必须在无上次产品残留的前提下再次成功，最后保留第二次成功安装。
-- 稳定性：Explorer/dllhost 崩溃日志、右键延迟、缓存刷新，以及新 Settings 页面是否可管理该扩展。
-
-上述实际安装测试本轮没有执行。独立故障注入测试只证明共享回滚调度逻辑，不替代 Windows 上的端到端验收。
-
-参考：[Inno PrepareToInstall](https://jrsoftware.org/ishelp/topic_scriptevents.htm)、
-[MSIX 证书信任排障](https://learn.microsoft.com/en-us/windows/msix/msix-troubleshooting-guide)、
-[微软现代菜单扩展](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/integrate-packaged-app-with-file-explorer)。
+历史故障和早期设计见 [test7 历史说明](docs/TEST7-README-HISTORY.md)，不能用旧测试结果代表新版验收。

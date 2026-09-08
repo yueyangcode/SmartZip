@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows10.0.22621.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="../../src/DeploymentHelper/Transaction.cs" Link="Transaction.cs" />
+  <Compile Include="../../src/DeploymentHelper/Journal.cs" Link="Journal.cs" />
+  <Compile Include="../../src/DeploymentHelper/InstallPath.cs" Link="InstallPath.cs" />
+  <Compile Include="../../src/DeploymentHelper/UpgradeBaseline.cs" Link="UpgradeBaseline.cs" />
+  <Compile Include="../../src/DeploymentHelper/UpgradePolicy.cs" Link="UpgradePolicy.cs" />
+  <Compile Include="../../src/DeploymentHelper/UpgradeBackup.cs" Link="UpgradeBackup.cs" />
+ </ItemGroup>
+</Project>

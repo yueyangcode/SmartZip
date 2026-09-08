@@ -10,7 +10,8 @@ if (!$iss.Contains('DisableDirPage=no') -or $iss.Contains('CreateInputDirPage') 
 if (!$iss.Contains('WizardForm.DirBrowseButton.OnClick := @BrowseInstallDirectory;') -or
     !$iss.Contains('WizardForm.DirEdit.OnExit := @NormalizeDirectory;') -or
     $iss -notmatch '(?s)if CurPageID = wpSelectDir then begin\s+NormalizeDirectory\(nil\);') { throw 'Browse, typed input and Next must share the same path normalization.' }
-if ($iss -notmatch '(?s)if DirExists\(WizardForm.DirEdit.Text\) or FileExists\(WizardForm.DirEdit.Text\) then begin.*?Result := False;\s+exit;') { throw 'Occupied targets must be rejected on the directory page before certificate consent.' }
+if ($iss -notmatch "(?s)if DirExists\(WizardForm.DirEdit.Text\) or FileExists\(WizardForm.DirEdit.Text\) then begin\s+EnsurePayload;\s+Result := RunHelper\('preflight'\);\s+if not Result then exit;\s+Upgrading := True;") { throw 'Occupied targets need real identity preflight before being accepted as upgrades.' }
+if (!$iss.Contains('if not Upgrading then begin') -or !$iss.Contains('UninstallLogMode=append') -or !$iss.Contains('SetupMutex=SmartZip.Modern.Setup')) { throw 'Upgrade must preserve old uninstall metadata and exclude concurrent setup.' }
 if ($iss -notmatch "(?s)if BrowseForFolder\([^\r\n]+\) then\s+WizardForm.DirEdit.Text := SmartZipDirectory\(Path\);" -or
     !$iss.Contains("CompareText(ExtractFileName(Result), 'SmartZip') <> 0") -or
     !$iss.Contains("if Result = '' then exit;")) { throw 'Only confirmed browsing may change the target; empty and already-suffixed input must be preserved.' }

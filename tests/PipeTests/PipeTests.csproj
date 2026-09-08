@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="../../src/DeploymentHelper/TrustBroker.cs" Link="TrustBroker.cs"/>
+  <Compile Include="../../src/DeploymentHelper/ProductIdentity.g.cs" Link="ProductIdentity.g.cs"/>
+ </ItemGroup>
+</Project>

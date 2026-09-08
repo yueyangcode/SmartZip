@@ -1,0 +1,20 @@
+SmartZip Modern
+
+Adds a native Windows 11 archive extraction command for the current user.
+Includes SmartZip (MIT), AutoHotkey (GPL-2.0) and 7-Zip (LGPL plus BSD/unRAR terms).
+Corresponding upstream source archives and full notices are installed with the product.
+No existing WinRAR or 7-Zip installation is changed.
+
+TEST-SIGNED BUILD NOTICE
+If this installer displays the test-certificate consent page, it is an evaluation
+build. Windows/SmartScreen may warn that its publisher is not publicly trusted.
+Only accept the certificate if you trust the distributor of this specific EXE.
+Certificate consent is explicit; no Root store or security policy is changed.
+A CA-trusted production signing certificate is needed for a normal public release.
+
+The optional Settings > Personalization > Context menu page is a Windows feature,
+not a prerequisite for the standard modern context menu. This installer does not
+enable hidden Windows features or override your menu preferences.
+
+Installing the menu is not a guarantee that no Explorer refresh/sign-out is needed.
+Package deployment failures are reported rather than bypassing enterprise policy.

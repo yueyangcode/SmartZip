@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+ <ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+ <PropertyGroup Label="Globals"><ProjectGuid>{59A695DB-0899-4119-90C3-D0F906F2E925}</ProjectGuid><Keyword>MakeFileProj</Keyword></PropertyGroup>
+ <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+ <PropertyGroup Label="Configuration"><ConfigurationType>Makefile</ConfigurationType><PlatformToolset>v143</PlatformToolset></PropertyGroup>
+ <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+ <PropertyGroup>
+  <NMakeBuildCommandLine>pwsh -NoProfile -File "$(ProjectDir)build.ps1" -Signing Test</NMakeBuildCommandLine>
+  <NMakeReBuildCommandLine>$(NMakeBuildCommandLine)</NMakeReBuildCommandLine>
+  <NMakeCleanCommandLine>cmd /c echo Clean is intentionally non-destructive. Build overwrites generated outputs.</NMakeCleanCommandLine>
+  <NMakeOutput>$(ProjectDir)dist\SmartZipModernSetup-test6.exe</NMakeOutput>
+  <NMakePreprocessorDefinitions>UNICODE;_UNICODE;_WIN32_WINNT=0x0A00</NMakePreprocessorDefinitions>
+ </PropertyGroup>
+ <ItemGroup><ClCompile Include="src\ContextMenu.cpp"/><ClCompile Include="src\Launcher.cpp"/><ClCompile Include="src\CertificateTrustHelper.cpp"/><ClCompile Include="src\NativeTests.cpp"/><ClInclude Include="src\Common.h"/></ItemGroup>
+ <ItemGroup><None Include="build.ps1"/><None Include="installer\SmartZipModern.iss"/><None Include="packaging\AppxManifest.xml.in"/></ItemGroup>
+ <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

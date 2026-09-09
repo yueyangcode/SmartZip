@@ -1,4 +1,4 @@
-param([ValidateSet('Test','Release')][string]$Signing='Test',[string]$Version='0.1.0.9',
+param([ValidateSet('Test','Release')][string]$Signing='Test',[string]$Version='0.1.0.11',
  [ValidateSet('','after-stage','after-package','before-commit','after-state')][string]$FaultAt='')
 $ErrorActionPreference='Stop'
 $parsedVersion=$null
@@ -19,6 +19,8 @@ Set-Location -LiteralPath $root
 & "$root\tests\UninstallOrder.Tests.ps1"
 & "$root\tests\LegacyRegistration.Tests.ps1"
 & "$root\tests\ChineseInstaller.Tests.ps1"
+& "$root\tests\UpdateOrder.Tests.ps1"
+& "$root\tests\DeploymentSafety.Tests.ps1"
 dotnet run --project "$root\tests\InstallPathTests" -c Release
 if($LASTEXITCODE -ne 0){throw 'Install path tests failed.'}
 dotnet run --project "$root\tests\UpgradeTests" -c Release
@@ -122,11 +124,13 @@ CheckExit 'certificate test build'
 }
 & "$llvm\x86_64-w64-mingw32-clang++.exe" @common -shared src\ContextMenu.cpp -o "$payload\SmartZipContextMenu.dll" -lole32 -lshell32 -lshlwapi -luuid
 CheckExit 'COM DLL'
-& "$llvm\x86_64-w64-mingw32-clang++.exe" @common -municode -mwindows src\Launcher.cpp build\launcher.res.o -o "$payload\SmartZip.exe" -lshell32
+& "$llvm\x86_64-w64-mingw32-clang++.exe" @common -municode -mwindows src\Launcher.cpp build\launcher.res.o -o "$payload\SmartZip.exe" -lshell32 -lole32 -luuid
 CheckExit 'launcher'
 & "$llvm\x86_64-w64-mingw32-clang++.exe" @common -municode src\NativeTests.cpp -o build\tests\NativeTests.exe -lshell32
 CheckExit 'native tests build'
 & .\build\tests\NativeTests.exe;CheckExit 'native tests'
+& "$llvm\x86_64-w64-mingw32-clang++.exe" @common -municode src\ActivityTests.cpp -o build\tests\ActivityTests.exe -lshell32 -lole32 -luuid -lwintrust
+CheckExit 'native updater layout/activity tests'
 & "$llvm\x86_64-w64-mingw32-clang++.exe" @common -municode src\ComTests.cpp -o build\tests\ComTests.exe -lshell32 -lole32 -luuid
 CheckExit 'COM tests build'
 $fixture=New-Item -ItemType Directory -Force "$root\build\tests\com-fixtures"
@@ -183,6 +187,8 @@ $setupName=if($Signing -eq 'Test'){"SmartZipSetup-$Version-test$faultSuffix.exe"
 Sign "$root\dist\$setupName"
 if($Signing -eq 'Release'){& "$sdk\signtool.exe" verify /pa "$root\dist\$setupName";CheckExit 'production installer trust'}
 if($Signing -eq 'Test' -and !$FaultAt){& "$root\tests\ReleaseGate.Tests.ps1" -TestInstaller "$root\dist\$setupName" -Version $Version}
+dotnet run --project tests\UpdateTests -c Release -- "$root\dist\$setupName" $Version "$payload\Identity.cer" "$root\build\tests\ActivityTests.exe"
+CheckExit 'offline updater security tests (no downloads or installation)'
 Get-Item "dist\$setupName" | Select-Object FullName,Length
 Get-FileHash "dist\$setupName" -Algorithm SHA256 | Format-List Hash
 Write-Host 'BUILD ONLY. Installer has NOT been executed. No package or certificate was registered.'

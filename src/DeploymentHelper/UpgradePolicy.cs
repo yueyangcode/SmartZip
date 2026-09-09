@@ -1,4 +1,6 @@
 internal static class UpgradePolicy {
+    internal static bool NeedsPackageRestore(int count,bool oldVersionPresent,bool oldHealthy) =>
+        count!=1||!oldVersionPresent||!oldHealthy;
     internal static Version VersionNumber(string text) {
         if(!Version.TryParse(text,out var value)||value.Build<0||value.Revision<0||value.ToString(4)!=text||
            new[]{value.Major,value.Minor,value.Build,value.Revision}.Any(p=>p>65535))

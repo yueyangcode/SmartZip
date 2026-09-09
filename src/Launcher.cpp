@@ -1,12 +1,20 @@
-#include "Common.h"
+#include "ActivityLock.h"
 int WINAPI wWinMain(HINSTANCE,HINSTANCE,LPWSTR,int) {
     try {
         const auto dir=szm::ModuleDirectory(nullptr);
         int count=0;LPWSTR* argv=CommandLineToArgvW(GetCommandLineW(),&count);
         if(!argv)return 2;
         const bool checkUpdates=count==2 && std::wstring(argv[1])==L"--check-updates";
+        const bool installed=GetFileAttributesW((dir+L"\\installed.json").c_str())!=INVALID_FILE_ATTRIBUTES;
+        szm::ActivityLease activity;
+        if(installed&&!checkUpdates) {
+            activity.handle=szm::OpenActivity(szm::ActivityPath());
+            if(activity.handle==INVALID_HANDLE_VALUE){
+                LocalFree(argv);MessageBoxW(nullptr,L"SmartZip 正在更新，或无法取得工作目录锁。请稍后重试；本次尚未开始解压。",L"SmartZip",MB_OK|MB_ICONINFORMATION);return 3;
+            }
+        }
         // Installed builds only: no GitHub polling from workspace smoke tests.
-        if(checkUpdates || GetFileAttributesW((dir+L"\\installed.json").c_str())!=INVALID_FILE_ATTRIBUTES) {
+        if(checkUpdates || installed) {
             std::vector<std::wstring> updateArgs{L"check-updates"};
             if(!checkUpdates)updateArgs.emplace_back(L"--no-ui");
             szm::Spawn(dir+L"\\DeploymentHelper.exe",updateArgs,dir,false);

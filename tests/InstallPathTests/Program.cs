@@ -20,10 +20,10 @@ foreach (var bad in new[]{@"relative", @"\\server\share\SmartZip", @"\\?\C:\Smar
     Check(refused);
 }
 Console.WriteLine("PASS parent suffix, no duplicate folder, Unicode, relative/UNC/device/root/ADS rejection; no files created");
-Check(UpdateCheck.ParseVersion("v1.2.3") == UpdateCheck.ParseVersion("1.2.3.0"));
-Check(UpdateCheck.ParseVersion("v1.10.0") > UpdateCheck.ParseVersion("1.9.9"));
+Check(UpdateRelease.ParseVersion("v1.2.3.0") == UpdateRelease.ParseVersion("1.2.3.0"));
+Check(UpdateRelease.ParseVersion("v1.10.0.0") > UpdateRelease.ParseVersion("1.9.9.0"));
 foreach (var invalid in new[]{"latest", "v1.0-beta", "https://evil.example", "../../installer"}) {
-    bool refused=false; try { UpdateCheck.ParseVersion(invalid); } catch (IOException) { refused=true; }
+    bool refused=false; try { UpdateRelease.ParseVersion(invalid); } catch (IOException) { refused=true; }
     Check(refused);
 }
 Console.WriteLine("PASS update numeric version comparison and invalid tags; no network requests");

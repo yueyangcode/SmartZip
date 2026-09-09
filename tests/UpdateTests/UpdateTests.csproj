@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows10.0.22621.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault><ApplicationManifest>../../src/DeploymentHelper/app.manifest</ApplicationManifest></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="../../src/DeploymentHelper/Update*.cs" Link="%(Filename)%(Extension)" />
+ </ItemGroup>
+</Project>

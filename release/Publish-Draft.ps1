@@ -19,7 +19,7 @@ $headers=@{Authorization="Bearer $($credential.password)";'User-Agent'='SmartZip
 try{
     $api='https://api.github.com/repos/yueyangcode/SmartZip'
     $tag="v$Version-test"
-    $existing=@(Invoke-RestMethod "$api/releases?per_page=100" -Headers $headers)|Where-Object tag_name -eq $tag
+    $existing=@((Invoke-RestMethod "$api/releases?per_page=100" -Headers $headers) | Where-Object tag_name -eq $tag)
     if(@($existing).Count -gt 1 -or ($existing -and !$existing.draft)){throw 'Refusing to change an existing published release.'}
     $notes=[IO.File]::ReadAllText((Join-Path $PSScriptRoot "NOTES-$Version.md"))
     $body=@{tag_name=$tag;target_commitish=$Commit;name="SmartZip $Version 升级开发测试版";body=$notes;draft=$true;prerelease=$true;make_latest='false'}|ConvertTo-Json

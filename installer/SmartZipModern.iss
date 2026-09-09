@@ -1,5 +1,5 @@
 ﻿#ifndef ProductVersion
- #define ProductVersion "0.1.0.9"
+ #define ProductVersion "0.1.0.11"
 #endif
 #ifndef TestSigned
  #define TestSigned "1"
@@ -174,14 +174,18 @@ begin
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
+var PreviousPath: String;
 begin
   Result := '';
   if Prepared then exit;
   if TriedPrepare then begin Result := '上一次安装尝试失败。请关闭安装程序，查看日志后再重试。'; exit; end;
-  if not Upgrading and not TrustPage.Values[0] then begin Result := '此测试版首次安装需要手动确认测试证书，不支持静默安装。'; exit; end;
   TriedPrepare := True;
   EnsurePayload;
   if not RunHelper('preflight') then begin Result := '安装前检查未通过，本次安装尚未提交。请查看错误提示和日志。'; exit; end;
+  // Silent setup must not depend on navigation events visiting the directory page.
+  // Full helper preflight above verifies any existing product before this classification.
+  Upgrading := RegQueryStringValue(HKCU, 'Software\SmartZipModern', 'VersionPath', PreviousPath);
+  if not Upgrading and not TrustPage.Values[0] then begin Result := '此测试版首次安装需要手动确认测试证书，不支持静默安装。'; exit; end;
   Prepared := RunHelper('prepare');
   if not Prepared then Result := '部署失败，程序已尝试回滚。请查看错误提示和日志确认清理结果。本次尚未提交卸载入口或开始菜单快捷方式。';
 end;

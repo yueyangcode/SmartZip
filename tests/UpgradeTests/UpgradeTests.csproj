@@ -6,6 +6,7 @@
   <Compile Include="../../src/DeploymentHelper/InstallPath.cs" Link="InstallPath.cs" />
   <Compile Include="../../src/DeploymentHelper/UpgradeBaseline.cs" Link="UpgradeBaseline.cs" />
   <Compile Include="../../src/DeploymentHelper/UpgradePolicy.cs" Link="UpgradePolicy.cs" />
+  <Compile Include="../../src/DeploymentHelper/PackageHealth.cs" Link="PackageHealth.cs" />
   <Compile Include="../../src/DeploymentHelper/UpgradeBackup.cs" Link="UpgradeBackup.cs" />
  </ItemGroup>
 </Project>

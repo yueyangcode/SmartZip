@@ -18,9 +18,6 @@ internal static class Program {
     static void Note(string message)=>File.AppendAllText(Log,DateTimeOffset.Now+" "+message+Environment.NewLine,Encoding.UTF8);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int MessageBoxW(IntPtr h,string text,string caption,uint type);
     [DllImport("shell32.dll")] static extern void SHChangeNotify(uint e,uint f,IntPtr a,IntPtr b);
-    [DllImport("ole32.dll")] static extern int CoInitializeEx(IntPtr p,uint flags);
-    [DllImport("ole32.dll")] static extern void CoUninitialize();
-    [DllImport("ole32.dll")] static extern int CoCreateInstance(ref Guid clsid,IntPtr outer,uint context,ref Guid iid,out IntPtr value);
     static string Marker=>Path.Combine(AppRoot,".install-transaction");
     static void Save(Journal j)=>File.WriteAllText(Receipt,JournalJson.Serialize(j));
     static Journal ReadJournal(){
@@ -46,7 +43,9 @@ internal static class Program {
                 AppRoot=InstallPath.Validate(Path.GetFullPath(Path.Combine(Source,"..","..")));
             }
             switch(args[0]){
-                case "check-updates":await UpdateCheck.Run(args.Contains("--no-ui"),Note,text=>MessageBoxW(IntPtr.Zero,text,"SmartZip 更新",0x24)==6);break;
+                case "check-updates":
+                    var updateRoot=ValidateUpdateRoot();
+                    await UpdateCheck.Run(args.Contains("--no-ui"),updateRoot,Note,()=>{ValidateUpdateRoot();},version=>VerifyUpdate(updateRoot,version));break;
                 case "inspect":Inspect(Source);break;
                 case "inspect-runtime":
                     Inspect(Source);
@@ -65,6 +64,8 @@ internal static class Program {
         }catch(Exception ex){Note(ex.ToString());if(!args.Contains("--no-ui"))MessageBoxW(IntPtr.Zero,UserError(ex)+"\n\n日志文件：\n"+Log,"SmartZip 安装/卸载提示",0x10);return 1;}
     }
     static string UserError(Exception ex) {
+        var deploymentMessage=DeploymentFailure.UserMessage(ex);
+        if(deploymentMessage!=null)return deploymentMessage;
         if (ex is UpgradeBaselineException or InstallDirectoryOccupiedException) return ex.Message;
         if (ex.Message == "This test build requires a clean project baseline. Uninstall the previous build first; existing files will not be overwritten.")
             return "检测到已安装的 SmartZip Modern 或上次安装残留。此测试版不支持覆盖安装。\n\n如果当前版本已能正常使用，无需重复安装。需要更换版本时，请先在“设置 → 应用 → 安装的应用”中卸载 SmartZip Modern，再重试。请勿手动删除安装目录。";
@@ -72,6 +73,30 @@ internal static class Program {
     }
     static void RequirePerUser(){
         UserContext.Require(Note);
+    }
+    static string ValidateUpdateRoot(){
+        RequirePerUser();
+        var root=InstallPath.Validate(Path.GetFullPath(Path.Combine(Source,"..","..")));
+        if(!string.Equals(Source,Path.Combine(root,"Versions",ProductIdentity.Version),StringComparison.OrdinalIgnoreCase))throw new IOException("更新程序不在当前版本的标准安装目录中。");
+        using var state=Registry.CurrentUser.OpenSubKey(StateKey);
+        if(state==null||state.GetValue("Version") as string!=ProductIdentity.Version||state.GetValue("Publisher") as string!=ProductIdentity.Publisher||
+           state.GetValue("CertificateThumbprint") as string!=ProductIdentity.CertificateThumbprint||
+           !string.Equals(state.GetValue("VersionPath") as string,Source,StringComparison.OrdinalIgnoreCase))throw new IOException("当前进程不是有效安装版本的更新程序，请从已安装的 SmartZip 检查更新。");
+        var receipt=JournalJson.Deserialize(File.ReadAllText(Path.Combine(Source,"installed.json")));
+        UpgradePolicy.RequireReceipt(receipt,root,WindowsIdentity.GetCurrent().User!.Value);
+        if(File.ReadAllText(Path.Combine(root,".install-transaction"))!=receipt.Nonce)throw new IOException("当前安装收据不一致，已停止更新。");
+        return root;
+    }
+    static void VerifyUpdate(string root,string version){
+        using var state=Registry.CurrentUser.OpenSubKey(StateKey);
+        var path=Path.Combine(root,"Versions",version);
+        if(state?.GetValue("Version") as string!=version||state.GetValue("Publisher") as string!=ProductIdentity.Publisher||
+           state.GetValue("CertificateThumbprint") as string!=ProductIdentity.CertificateThumbprint||
+           !string.Equals(state.GetValue("VersionPath") as string,path,StringComparison.OrdinalIgnoreCase))throw new IOException("安装程序已退出，但新版产品状态未通过验证。请保留安装日志。");
+        var receipt=JournalJson.Deserialize(File.ReadAllText(Path.Combine(path,"installed.json")));
+        UpgradePolicy.RequireReceipt(receipt,root,WindowsIdentity.GetCurrent().User!.Value);
+        if(state.GetValue("UserSid") as string!=receipt.UserSid||File.ReadAllText(Path.Combine(root,".install-transaction"))!=receipt.Nonce)throw new IOException("新版安装收据或用户身份验证失败，请保留安装日志。");
+        VerifyRegistration(version,path);
     }
     static void Fault(string stage){
         if(ProductIdentity.TestSigned&&ProductIdentity.FaultAt==stage)
@@ -170,7 +195,17 @@ internal static class Program {
         if(!Directory.Exists(path))return;SafeTree(path);
         if(!File.Exists(marker)||File.ReadAllText(marker)!=j.Nonce)throw new IOException("Stage ownership marker mismatch; deletion refused.");Directory.Delete(path,true);
     }
-    static async Task RegisterAt(string path,bool downgrade=false){var r=await new PackageManager().AddPackageByUriAsync(new Uri(Path.Combine(path,"Identity.msix")),new AddPackageOptions{ExternalLocationUri=new Uri(path+Path.DirectorySeparatorChar),ForceUpdateFromAnyVersion=downgrade});if(r.ExtendedErrorCode!=null)throw new InvalidOperationException(r.ErrorText,r.ExtendedErrorCode);}
+    static async Task RegisterAt(string path,bool downgrade=false){
+        Note($"PACKAGE_ADD_BEGIN path={path}; RestorePrevious={downgrade}; ForceShutdown=False; Deferred=False");
+        try{
+            var r=await new PackageManager().AddPackageByUriAsync(new Uri(Path.Combine(path,"Identity.msix")),new AddPackageOptions{
+                ExternalLocationUri=new Uri(path+Path.DirectorySeparatorChar),ForceUpdateFromAnyVersion=downgrade,
+                ForceAppShutdown=false,ForceTargetAppShutdown=false,DeferRegistrationWhenPackagesAreInUse=false});
+            Note($"PACKAGE_ADD_RESULT ActivityId={r.ActivityId}; IsRegistered={r.IsRegistered}; Error={r.ErrorText}");
+            if(r.ExtendedErrorCode!=null)throw new InvalidOperationException(r.ErrorText,r.ExtendedErrorCode);
+            if(!r.IsRegistered)throw new IOException("Package registration is pending or incomplete; refusing to commit.");
+        }catch(Exception ex){Note($"PACKAGE_ADD_FAILED HResult=0x{ex.HResult:X8}; {ex.Message}");throw;}
+    }
     static async Task Register(){await RegisterAt(Target);Fault("after-package");}
     static async Task RemovePackage(){
         var m=new PackageManager();foreach(var p in Packages(m).ToArray()){
@@ -182,17 +217,19 @@ internal static class Program {
         var registered=Packages(new PackageManager()).ToArray();
         if(registered.Length!=1)throw new IOException("Expected exactly one registered package version.");
         var p=registered.SingleOrDefault(p=>VersionOf(p)==(version??ProductIdentity.Version))??throw new IOException("Expected package is not registered.");
+        var health=ReadPackageHealth(p);health.RequireHealthy(p.Id.FullName);
         if(!string.Equals(p.EffectiveExternalLocation.Path.TrimEnd('\\'),path??Target,StringComparison.OrdinalIgnoreCase))throw new IOException("Package external location mismatch.");
         using var key=Registry.ClassesRoot.OpenSubKey(@"PackagedCom\Package\"+p.Id.FullName+@"\Class\"+Clsid);
         if(key==null)throw new IOException("Package exists, but packaged COM registration is missing.");
         var doc=XDocument.Load(Path.Combine(p.InstalledLocation.Path,"AppxManifest.xml"));
         if(!doc.Descendants().Any(e=>e.Name.LocalName=="Verb"&&Guid.TryParse((string?)e.Attribute("Clsid"),out var id)&&id==Guid.Parse(Clsid)))throw new IOException("Registered package has no expected context-menu declaration.");
-        int init=CoInitializeEx(IntPtr.Zero,0);
-        if(init<0&&init!=unchecked((int)0x80010106))Marshal.ThrowExceptionForHR(init);
-        try{var clsid=Guid.Parse(Clsid);var iid=Guid.Parse("a08ce4d0-fa25-44ab-b57c-c7b1c323e0b9");
-            int hr=CoCreateInstance(ref clsid,IntPtr.Zero,4,ref iid,out var command);
-            if(hr<0)Marshal.ThrowExceptionForHR(hr);if(command==IntPtr.Zero)throw new IOException("COM activation returned no interface.");Marshal.Release(command);
-        }finally{if(init>=0)CoUninitialize();}
+        // Never activate a packaged COM server during a deployment transaction.
+        // Even a released interface can leave its surrogate holding the old package.
+        // Live IExplorerCommand behavior is tested separately, not by loading Explorer's DLL here.
+    }
+    static PackageHealth ReadPackageHealth(Windows.ApplicationModel.Package package){
+        var health=PackageHealth.Read(package.Status);
+        Note($"PACKAGE_HEALTH={package.Id.FullName}; {health}");return health;
     }
     static async Task Prepare(){
         var previous=Preflight();var j=new Journal(Guid.NewGuid().ToString("N"),previous?.CertificateCreated??false,WindowsIdentity.GetCurrent().User!.Value,AppRoot,previous);Save(j);
@@ -216,7 +253,7 @@ internal static class Program {
                 if(File.Exists(Marker)&&File.ReadAllText(Marker)==j.Nonce)
                     File.WriteAllText(Path.Combine(AppRoot,"recovery.json"),JournalJson.Serialize(j));
                 Note("ROLLBACK_INCOMPLETE: "+cleanup);
-                throw new AggregateException(primary,cleanup);
+                throw new RollbackIncompleteException(primary,cleanup);
             }throw;
         }
         finally{broker?.Dispose();}
@@ -245,8 +282,11 @@ internal static class Program {
             throw new IOException("Previous package backup was changed; rollback stopped.");
         var present=Packages(new PackageManager()).ToArray();
         if(present.Any(p=>VersionOf(p)!=old.Version&&VersionOf(p)!=ProductIdentity.Version))throw new IOException("Unexpected package appeared during rollback.");
-        if(present.Length!=1||VersionOf(present[0])!=old.Version)await RegisterAt(path,true);
+        bool oldVersionPresent=present.Length==1&&VersionOf(present[0])==old.Version;
+        bool oldHealthy=oldVersionPresent&&ReadPackageHealth(present[0]).IsHealthy;
+        if(UpgradePolicy.NeedsPackageRestore(present.Length,oldVersionPresent,oldHealthy))await RegisterAt(path,true);
         VerifyRegistration(old.Version,path);
+        Note("PREVIOUS_PACKAGE_RESTORED_HEALTHY="+old.Version);
     }
     static async Task PrepareUpgrade(Journal j){
         var tx=new Transaction();
@@ -256,16 +296,29 @@ internal static class Program {
             await tx.Step("upgrade package",Register,()=>RestorePreviousPackage(j));
             VerifyRegistration();tx.Commit();Note("UPGRADE_PREPARED; previous files, configuration and certificate ownership retained.");
         }catch(Exception primary){
-            try{await tx.Rollback();UpgradeBackup.Discard(AppRoot,j.Nonce);File.Delete(Receipt);Note("UPGRADE_ROLLBACK_COMPLETE");}
-            catch(Exception cleanup){Note("UPGRADE_ROLLBACK_INCOMPLETE="+cleanup);throw new AggregateException(primary,cleanup);}
+            try{await tx.Rollback();VerifyRegistration(j.Previous!.Version,Path.Combine(AppRoot,"Versions",j.Previous.Version));UpgradeBackup.Discard(AppRoot,j.Nonce);File.Delete(Receipt);Note("UPGRADE_ROLLBACK_COMPLETE; previous package health verified.");}
+            catch(Exception cleanup){RetainUpgradeRecovery(j,cleanup);throw new RollbackIncompleteException(primary,cleanup);}
             throw;
         }
+    }
+    static void RetainUpgradeRecovery(Journal j,Exception cleanup){
+        Note("UPGRADE_ROLLBACK_INCOMPLETE="+cleanup);
+        try{
+            UpgradePolicy.RequireReceipt(j,AppRoot,WindowsIdentity.GetCurrent().User!.Value);SafeParents(AppRoot);
+            var marker=File.ReadAllText(Marker);
+            if(marker!=j.Nonce&&marker!=j.Previous?.Nonce)throw new IOException("Recovery ownership mismatch.");
+            // CreateNew never overwrites a different transaction's recovery record.
+            using var file=new FileStream(Path.Combine(AppRoot,"recovery.json"),FileMode.CreateNew,FileAccess.Write,FileShare.None);
+            using var writer=new StreamWriter(file,Encoding.UTF8);writer.Write(JournalJson.Serialize(j));
+        }catch(Exception ex){Note("RECOVERY_RECORD_NOT_WRITTEN; keep version files and upgrade backup. "+ex);}
     }
     static async Task RollbackPrepared(){
         RequirePerUser();if(!File.Exists(Receipt))return;var j=ReadJournal();
         if(j.Previous!=null){
+            try{
             await RestorePreviousPackage(j);UpgradeBackup.Restore(AppRoot,j.Nonce);DeleteStage(j);UpgradeBackup.Discard(AppRoot,j.Nonce);File.Delete(Receipt);
-            Note("UPGRADE_ROLLBACK_COMPLETE; original package, registry, uninstaller and shortcuts restored.");return;
+            Note("UPGRADE_ROLLBACK_COMPLETE; healthy original package, registry, uninstaller and shortcuts restored.");return;
+            }catch(Exception cleanup){RetainUpgradeRecovery(j,cleanup);throw new RollbackIncompleteException(new IOException("Installation commit failed."),cleanup);}
         }
         await RemovePackage();if(ProductIdentity.TestSigned){using var b=await TrustBroker.Open(Path.Combine(Source,"CertificateTrustHelper.exe"),false);await b.Release(j.CertificateCreated);}
         Registry.CurrentUser.DeleteSubKeyTree(StateKey,false);DeleteStage(j);File.Delete(Receipt);Note("ROLLBACK_COMPLETE");

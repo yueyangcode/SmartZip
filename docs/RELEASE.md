@@ -1,17 +1,17 @@
 # 发布与 WinGet 状态
 
-**发布状态（2026-09-10）：`.15` 开发测试版草稿已创建，尚未公开发布。** 源码已推送到公开仓库；`.15` 草稿固定到源码提交 `8b2616900f9fa6e5d2671527a9b531c1c239b501`。两个附件上传后已核对 GitHub 返回的大小和 SHA-256。仓库首页仍显示“未发布任何版本”，因为草稿不是已发布的发行版。
+**发布状态（2026-09-10）：[0.1.0.15 公开预览版已发布](https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test)。** 用户确认后于北京时间 20:16 发布，状态为 `draft=false`、`prerelease=true`，未设为稳定版或 latest。安装包仍为已验收的原始文件；已通过未登录下载核对两个附件的大小、SHA-256 和校验文件内容。
 
 ## 当前测试版材料：0.1.0.15
 
-维护者登录有仓库写入权限的 GitHub 账号后，可[打开 `.15` 草稿](https://github.com/yueyangcode/SmartZip/releases/tag/untagged-167ba3e6cde516e5ee15)查看附件。没有权限的访客无法访问这个草稿；目前没有公开安装包下载链接。GitHub 将“保存草稿”和“公开发布”分为两个操作，见[官方说明](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)。
+访客无需登录即可访问[发行版页面](https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test)，下载 `SmartZipSetup-0.1.0.15-test.exe` 和 `SHA256SUMS.txt`。首次安装需要用户同意添加项目测试证书；本次发布不会触发自动更新提示，公共 WinGet 尚未提供。GitHub Packages 不用于存放本项目的 EXE 安装包。
 
-- [测试版说明草稿](../release/NOTES-0.1.0.15.md)与[固定安装包记录](BUILD-0.1.0.15.md)已准备。不得覆盖或重建这个已验收安装包。
-- 本地附件在 `build/release/0.1.0.15`：原安装包、`SHA256SUMS.txt`、说明与源码记录；EXE 和校验文件已上传到草稿，版本说明已写入草稿正文。设备日志、恢复资料和私钥未上传。
+- [公开预览版说明](../release/NOTES-0.1.0.15-public.md)与[固定安装包记录](BUILD-0.1.0.15.md)对应本次发布；[原开发说明](../release/NOTES-0.1.0.15.md)保留供追溯。不得覆盖或重建已验收安装包。
+- 本地附件在 `build/release/0.1.0.15`。原草稿回执和源码记录保留历史状态；[公开发布记录](PUBLICATION-0.1.0.15.md)记录后续发布结果。只发布 EXE、校验文件及公开说明，没有上传设备日志、恢复资料和私钥。
 - 沙盒中的 `Run-Icon-Upgrade.cmd` 已完成一次普通交互升级，记录实际 `C:\SmartZip` 的前后文件清单。脚本没有执行清理、补注册、提权命令或自动重试，不要重复运行。
 - 结果在 `C:\SmartZipTestOutput\normal-upgrade-0.1.0.15`。部署检查通过，用户随后确认新图标及 ZIP 解压正常。保留当前 `.15` 安装，不再卸载或重跑 `.14` 全部 case。
-- `.15` 源码提交为 [`8b26169`](https://github.com/yueyangcode/SmartZip/commit/8b2616900f9fa6e5d2671527a9b531c1c239b501)，草稿目标标签为 `v0.1.0.15-test`，Git 标签尚未创建。后续 README 翻译和文档提交不改变该草稿的源码目标，也不替换已验收安装包。
-- 当前状态为 `draft=true`、`prerelease=true`、`published_at=null`。公开发布仍需用户另行确认；不标为稳定版，不触发当前更新器，不提交公共 WinGet，仓库保持公开。
+- 已创建 Git 标签 `v0.1.0.15-test`，远端指向源码提交 [`8b26169`](https://github.com/yueyangcode/SmartZip/commit/8b2616900f9fa6e5d2671527a9b531c1c239b501)。后续 README 翻译和发布文档提交不改变该标签或已验收安装包。
+- Release ID 为 `386097906`，`published_at=2026-09-10T12:16:14Z`。只公开本次 `.15` 预览版，历史 `.11`、`.9` 草稿不变，仓库保持公开。
 
 ## 已准备
 
@@ -40,7 +40,7 @@
 
 ## 历史开发版草稿：0.1.0.11
 
-以下保留原草稿流程供追溯，不应重新发布 `.11` 或将其设为 latest。当前 `.15` 草稿已使用对应源码提交、版本说明和原哈希安装包创建；不要执行下面的历史 `.11` 示例来更新它。
+以下保留原草稿流程供追溯，不应重新发布 `.11` 或将其设为 latest。`.15` 已使用对应源码提交和原哈希安装包公开预发布；不要执行下面的历史 `.11` 示例来更新它。
 
 目标标签为 `v0.1.0.11-test`，状态必须同时为 `draft=true`、`prerelease=true`，不设为 latest。上传已验收的安装包和 `SHA256SUMS.txt`，不上传证书私钥、开发工具、设备日志或恢复备份。草稿对普通访问者不可见；本项目更新器忽略草稿与预发布。
 

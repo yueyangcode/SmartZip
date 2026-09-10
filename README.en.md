@@ -5,7 +5,7 @@
 <p align="center">Extract archives from the Windows 11 modern context menu.</p>
 <p align="center">
   <img src="https://img.shields.io/badge/Windows_11-x64-0078D4?style=flat-square" alt="Windows 11 x64">
-  <a href="docs/RELEASE.md"><img src="https://img.shields.io/badge/0.1.0.15-draft-F59E0B?style=flat-square" alt="0.1.0.15 development draft"></a>
+  <a href="https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test"><img src="https://img.shields.io/badge/0.1.0.15-preview-F59E0B?style=flat-square" alt="0.1.0.15 public preview"></a>
   <a href="docs/BUILD-0.1.0.15.md"><img src="https://img.shields.io/badge/Installer-14.45_MiB-6366F1?style=flat-square" alt="Installer: 14.45 MiB"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Source_license-MIT-22C55E?style=flat-square" alt="Project source: MIT license"></a>
 </p>
@@ -21,7 +21,7 @@
 
 ## Get started
 
-**`0.1.0.15` is a development draft. No installer is publicly released yet.** The repository therefore shows “No releases published”. [Releases](https://github.com/yueyangcode/SmartZip/releases) · [Release status and checksums](docs/RELEASE.md)
+**Download the `0.1.0.15` public preview. It uses a self-signed test certificate and is not a stable release.** [Download and installation notes](https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test) · [Release status](docs/RELEASE.md)
 
 Requires **Windows 11 x64, Build 22621 or later**. Once you have the test installer:
 

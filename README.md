@@ -5,7 +5,7 @@
 <p align="center">Windows 11 一级右键菜单里的智能解压。</p>
 <p align="center">
   <img src="https://img.shields.io/badge/Windows_11-x64-0078D4?style=flat-square" alt="Windows 11 x64">
-  <a href="docs/RELEASE.md"><img src="https://img.shields.io/badge/0.1.0.15-draft-F59E0B?style=flat-square" alt="0.1.0.15 development draft"></a>
+  <a href="https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test"><img src="https://img.shields.io/badge/0.1.0.15-preview-F59E0B?style=flat-square" alt="0.1.0.15 public preview"></a>
   <a href="docs/BUILD-0.1.0.15.md"><img src="https://img.shields.io/badge/Installer-14.45_MiB-6366F1?style=flat-square" alt="Installer: 14.45 MiB"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Source_license-MIT-22C55E?style=flat-square" alt="Project source: MIT license"></a>
 </p>
@@ -21,7 +21,7 @@
 
 ## 获取与使用
 
-**当前是 `0.1.0.15` 开发测试草稿，尚无公开安装包。** 因此仓库首页会显示“未发布任何版本”。[发行版页面](https://github.com/yueyangcode/SmartZip/releases) · [当前状态与校验值](docs/RELEASE.md)
+**`0.1.0.15` 公开预览版现已提供下载，使用自签名测试证书，尚非稳定版。** [下载与安装说明](https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test) · [发布状态](docs/RELEASE.md)
 
 仅支持 **Windows 11 x64，Build 22621 或更新**。取得测试包后：
 

@@ -5,7 +5,7 @@
 <p align="center">Windows 11 第一層右鍵選單中的智慧解壓縮。</p>
 <p align="center">
   <img src="https://img.shields.io/badge/Windows_11-x64-0078D4?style=flat-square" alt="Windows 11 x64">
-  <a href="docs/RELEASE.md"><img src="https://img.shields.io/badge/0.1.0.15-draft-F59E0B?style=flat-square" alt="0.1.0.15 development draft"></a>
+  <a href="https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test"><img src="https://img.shields.io/badge/0.1.0.15-preview-F59E0B?style=flat-square" alt="0.1.0.15 public preview"></a>
   <a href="docs/BUILD-0.1.0.15.md"><img src="https://img.shields.io/badge/Installer-14.45_MiB-6366F1?style=flat-square" alt="Installer: 14.45 MiB"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Source_license-MIT-22C55E?style=flat-square" alt="Project source: MIT license"></a>
 </p>
@@ -21,7 +21,7 @@
 
 ## 取得與使用
 
-**目前 `0.1.0.15` 為開發測試草稿，尚無公開安裝包。** 因此儲存庫首頁仍顯示未發行版本。[發行版頁面](https://github.com/yueyangcode/SmartZip/releases) · [發行狀態與校驗值](docs/RELEASE.md)
+**`0.1.0.15` 公開預覽版已提供下載，使用自簽測試憑證，尚非穩定版。** [下載與安裝說明](https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test) · [發行狀態](docs/RELEASE.md)
 
 僅支援 **Windows 11 x64，Build 22621 或更新版本**。取得測試安裝包後：
 

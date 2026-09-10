@@ -5,7 +5,7 @@
 <p align="center">Windows 11 の新しい右クリックメニューから解凍。</p>
 <p align="center">
   <img src="https://img.shields.io/badge/Windows_11-x64-0078D4?style=flat-square" alt="Windows 11 x64">
-  <a href="docs/RELEASE.md"><img src="https://img.shields.io/badge/0.1.0.15-draft-F59E0B?style=flat-square" alt="0.1.0.15 development draft"></a>
+  <a href="https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test"><img src="https://img.shields.io/badge/0.1.0.15-preview-F59E0B?style=flat-square" alt="0.1.0.15 public preview"></a>
   <a href="docs/BUILD-0.1.0.15.md"><img src="https://img.shields.io/badge/Installer-14.45_MiB-6366F1?style=flat-square" alt="Installer: 14.45 MiB"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Source_license-MIT-22C55E?style=flat-square" alt="Project source: MIT license"></a>
 </p>
@@ -21,7 +21,7 @@
 
 ## 入手と使い方
 
-**`0.1.0.15` は開発テスト版の下書きで、インストーラーはまだ一般公開していません。** リポジトリにリリースが表示されないのはこのためです。[リリース一覧](https://github.com/yueyangcode/SmartZip/releases) · [公開状況とチェックサム](docs/RELEASE.md)
+**`0.1.0.15` プレビュー版を公開しました。自己署名のテスト証明書を使用する開発版で、安定版ではありません。** [ダウンロードとインストール手順](https://github.com/yueyangcode/SmartZip/releases/tag/v0.1.0.15-test) · [公開状況](docs/RELEASE.md)
 
 対応環境は **Windows 11 x64、Build 22621 以降**です。テスト用インストーラーを入手したら：
 

@@ -1,0 +1,83 @@
+[Setup]
+AppId=SmartZip.FontPreview.NoInstall
+AppName=SmartZip 中文显示验证
+AppVersion=1
+AppVerName=SmartZip 中文显示验证（不会安装软件）
+DefaultDirName={tmp}\SmartZip-FontPreview-NoInstall
+UsePreviousAppDir=no
+UsePreviousGroup=no
+CreateAppDir=no
+Uninstallable=no
+CreateUninstallRegKey=no
+PrivilegesRequired=lowest
+DisableWelcomePage=yes
+DisableProgramGroupPage=yes
+CloseApplications=no
+RestartApplications=no
+WizardStyle=modern
+OutputDir=@OUTPUT@
+OutputBaseFilename=SmartZip-FontPreview
+
+[Languages]
+Name: "chinesesimplified"; MessagesFile: "@LANGUAGE@"
+
+[Code]
+var PreviewPage: TInputOptionWizardPage;
+
+function InitializeSetup: Boolean;
+begin
+  Result := ExpandConstant('{param:SELFTEST|0}') <> '1';
+  if not Result then Log('FONT_PREVIEW_SELFTEST_NO_INSTALL');
+end;
+
+procedure InitializeWizard;
+var Names: TArrayOfString; I: Integer; Value: String;
+begin
+  // Reuse the exact production certificate-page strings and controls.
+  // The checkbox is a visual sample, NOT consent: this EXE cannot install.
+@CONSENT_PAGE@
+  PreviewPage.Values[0] := True;
+  Log('FONT_PREVIEW_ONLY; DialogFont=' + WizardForm.Font.Name +
+      '; DialogSize=' + IntToStr(WizardForm.Font.Size) +
+      '; PageFont=' + PreviewPage.CheckListBox.Font.Name);
+  Log('FONT_FILES msyh.ttc=' + IntToStr(Ord(FileExists(ExpandConstant('{fonts}\msyh.ttc')))) +
+      '; simsun.ttc=' + IntToStr(Ord(FileExists(ExpandConstant('{fonts}\simsun.ttc')))));
+  if RegGetValueNames(HKLM, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts', Names) then
+    for I := 0 to GetArrayLength(Names)-1 do
+      if (Pos('YaHei', Names[I]) > 0) or (Pos('SimSun', Names[I]) > 0) or (Pos('Tahoma', Names[I]) > 0) then
+        if RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts', Names[I], Value) then
+          Log('FONT_REGISTERED ' + Names[I] + '=' + Value);
+  if RegQueryMultiStringValue(HKLM, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink', 'Tahoma', Value) then
+    Log('TAHOMA_LINK=' + Value);
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := PageID <> PreviewPage.ID;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  WizardForm.NextButton.Caption := '关闭预览';
+  WizardForm.CancelButton.Caption := '关闭';
+  if CurPageID = PreviewPage.ID then Log('FONT_PREVIEW_PAGE_REACHED');
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  // Inno calls this while skipping the hidden welcome page before showing UI.
+  // Only close after the user has actually reached the preview page.
+  Result := CurPageID <> PreviewPage.ID;
+  if not Result then WizardForm.Close;
+end;
+
+procedure CancelButtonClick(CurPageID: Integer; var Cancel, Confirm: Boolean);
+begin
+  Cancel := True;
+  Confirm := False;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := 'FONT PREVIEW ONLY. Installation is disabled.';
+end;

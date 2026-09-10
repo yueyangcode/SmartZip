@@ -26,10 +26,13 @@ LanguageID=$0804
 LanguageCodePage=936
 ; If the language you are translating to requires special font faces or
 ; sizes, uncomment any of the following entries and change them accordingly.
-;DialogFontName=
-;DialogFontSize=8
-;WelcomeFontName=Verdana
-;WelcomeFontSize=12
+; SmartZip: select the Windows 11 CJK UI face explicitly. Inno 6.2 defaults
+; to Tahoma, whose Chinese font linking is not reliable in a clean Sandbox.
+; This changes Setup/Uninstall text only; no font is bundled or installed.
+DialogFontName=Microsoft YaHei UI
+DialogFontSize=9
+WelcomeFontName=Microsoft YaHei UI
+WelcomeFontSize=12
 ;TitleFontName=Arial
 ;TitleFontSize=29
 ;CopyrightFontName=Arial

@@ -30,6 +30,24 @@ var backup=new UpgradeBackupData(nonce,new[]{new BackupKey(UpgradeBackup.StateKe
     new[]{"unins000.exe","unins000.dat","unins000.msg",".install-transaction","shortcut-settings","shortcut-uninstall","shortcut-updates"}.Select(n=>new BackupFile(n,n=="unins000.msg"?null:new byte[]{0,1,255})).ToArray());
 UpgradeBackup.ValidateData(backup,nonce);
 var encoded=UpgradeBackup.Serialize(backup);Check(UpgradeBackup.Serialize(UpgradeBackup.Deserialize(encoded))==encoded);
+// Compare the original values, not only re-encoded JSON: null means absent,
+// while byte[0] means an existing empty file. Both must survive source generation.
+Check(!System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault);
+foreach(var contents in new byte[]?[]{null,Array.Empty<byte>(),new byte[]{0,1,255}})
+foreach(var index in Enumerable.Range(0,backup.Files.Length)){
+    var files=backup.Files.ToArray();files[index]=files[index] with{Data=contents};
+    var original=backup with{Files=files};var json=UpgradeBackup.Serialize(original);
+    var restored=UpgradeBackup.Deserialize(json);UpgradeBackup.ValidateData(restored,nonce);
+    using var document=System.Text.Json.JsonDocument.Parse(json);
+    Check(document.RootElement.GetProperty("Files")[index].GetProperty("Data").ValueKind==
+        (contents==null?System.Text.Json.JsonValueKind.Null:System.Text.Json.JsonValueKind.String));
+    foreach(var (expected,actual) in original.Files.Zip(restored.Files)){
+        if(expected.Name!=actual.Name || (expected.Data==null ? actual.Data!=null :
+            actual.Data==null || !expected.Data.SequenceEqual(actual.Data)))
+            throw new Exception("Backup changed missing/empty/content file semantics: "+expected.Name);
+    }
+}
+Console.WriteLine("PASS 21 backup round trips: all seven owned file slots preserve missing, empty and binary content; reflection disabled.");
 Check((int)values[1].Value()==-1&&(long)values[2].Value()==-2&&((byte[])values[5].Value()).SequenceEqual(new byte[]{0,1,255}));
 Reject(()=>UpgradeBackup.ValidateData(backup,"another-nonce"));
 Reject(()=>UpgradeBackup.ValidateData(backup with{Keys=new[]{new BackupKey(@"Software\Other",values)}},nonce));

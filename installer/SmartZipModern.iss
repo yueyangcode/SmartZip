@@ -1,5 +1,5 @@
 ﻿#ifndef ProductVersion
- #define ProductVersion "0.1.0.11"
+ #define ProductVersion "0.1.0.15"
 #endif
 #ifndef TestSigned
  #define TestSigned "1"
@@ -40,6 +40,7 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 SetupIconFile={#Root}build\payload\Assets\SmartZip.ico
+WizardSmallImageFile={#Root}build\payload\Assets\WizardSmall.bmp
 UninstallDisplayIcon={app}\Versions\{#ProductVersion}\Assets\SmartZip.ico
 LicenseFile={#Root}LICENSE
 CloseApplications=no
@@ -63,11 +64,11 @@ SelectDirBrowseLabel=点击“浏览”选择父目录，确认后会自动添�
 Source: "{#Root}build\payload\*"; DestDir: "{tmp}\payload"; Flags: dontcopy recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{userprograms}\SmartZip\SmartZip 设置"; Filename: "{app}\Versions\{#ProductVersion}\SmartZip.exe"
-Name: "{userprograms}\SmartZip\卸载 SmartZip"; Filename: "{uninstallexe}"
+Name: "{userprograms}\SmartZip\SmartZip 设置"; Filename: "{app}\Versions\{#ProductVersion}\SmartZip.exe"; IconFilename: "{app}\Versions\{#ProductVersion}\Assets\SmartZip.ico"
+Name: "{userprograms}\SmartZip\卸载 SmartZip"; Filename: "{uninstallexe}"; IconFilename: "{app}\Versions\{#ProductVersion}\Assets\SmartZip.ico"
 
 [Icons]
-Name: "{userprograms}\SmartZip\检查更新"; Filename: "{app}\Versions\{#ProductVersion}\SmartZip.exe"; Parameters: "--check-updates"
+Name: "{userprograms}\SmartZip\检查更新"; Filename: "{app}\Versions\{#ProductVersion}\SmartZip.exe"; Parameters: "--check-updates"; IconFilename: "{app}\Versions\{#ProductVersion}\Assets\SmartZip.ico"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\Versions\{#ProductVersion}"
@@ -78,7 +79,7 @@ Type: dirifempty; Name: "{app}"
 [Code]
 var
   TrustPage: TInputOptionWizardPage;
-  Prepared, Completed, RollbackFailed, TriedPrepare, Upgrading, PayloadExtracted: Boolean;
+  Prepared, Completed, RollbackFailed, RollbackAttempted, TriedPrepare, Upgrading, PayloadExtracted: Boolean;
 
 function Helper: String;
 begin
@@ -190,34 +191,92 @@ begin
   if not Prepared then Result := '部署失败，程序已尝试回滚。请查看错误提示和日志确认清理结果。本次尚未提交卸载入口或开始菜单快捷方式。';
 end;
 
+procedure RemoveFreshInstallMetadata;
+var Key, Folder, Path: String; I: Integer;
+begin
+  Key := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{DA975784-DC84-48EF-9A47-F60C0C969280}_is1';
+  if RegKeyExists(HKCU, Key) and not RegDeleteKeyIncludingSubkeys(HKCU, Key) then
+    RaiseException('无法清理本项目卸载记录。');
+  Folder := ExpandConstant('{userprograms}\SmartZip');
+  for I := 0 to 2 do begin
+    case I of
+      0: Path := Folder + '\SmartZip 设置.lnk';
+      1: Path := Folder + '\卸载 SmartZip.lnk';
+      2: Path := Folder + '\检查更新.lnk';
+    end;
+    if FileExists(Path) and not DeleteFile(Path) then RaiseException('无法清理本项目快捷方式：' + Path);
+  end;
+  if DirExists(Folder) and not RemoveDir(Folder) then RaiseException('无法清理本项目开始菜单目录。');
+end;
+
+procedure RollbackDeployment;
+begin
+  if not Prepared or Completed or RollbackAttempted then exit;
+  RollbackAttempted := True;
+  RollbackFailed := True;
+  try
+    if not RunHelper('rollback') then exit;
+    if not Upgrading then RemoveFreshInstallMetadata;
+    RollbackFailed := False;
+    Log('SETUP_ROLLBACK_COMPLETE; installation was NOT committed.');
+  except
+    Log('SETUP_ROLLBACK_EXCEPTION: ' + GetExceptionMessage);
+  end;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then begin
-    if not RunHelper('commit') then RaiseException('安装提交校验失败，退出时将尝试回滚。请保留日志。');
+    // Inno handles exceptions from this event and can still reach ssDone.
+    // Completion must come from the real commit result, never the UI step.
+    Completed := False;
+    try
+      if RunHelper('commit') then Completed := True;
+    except
+      Completed := False;
+      Log('SETUP_COMMIT_EXCEPTION: ' + GetExceptionMessage);
+    end;
+    if not Completed then begin
+      Log('SETUP_COMMIT_FAILED; rolling back before the finished page.');
+      RollbackDeployment;
+    end;
   end;
   if CurStep = ssDone then begin
-    Completed := True;
-    if not RunHelper('finalize') then
-      Log('Installation committed; upgrade backup retained because final cleanup could not be confirmed.');
+    if Completed then begin
+      if not RunHelper('finalize') then
+        Log('Installation committed; upgrade backup retained because final cleanup could not be confirmed.');
+    end else RollbackDeployment;
+  end;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpFinished) and Prepared and not Completed then begin
+    WizardForm.FinishedHeadingLabel.Caption := 'SmartZip 安装未完成';
+    if RollbackFailed then
+      WizardForm.FinishedLabel.Caption := '安装失败，回滚尚未完成。已保留恢复资料。请保留日志并联系开发者；不要卸载、手动删文件或继续重试。'
+    else
+      WizardForm.FinishedLabel.Caption := '安装失败，已执行回滚，未提交本次安装。请保留日志供开发者检查。';
+  end;
+end;
+
+function GetCustomSetupExitCode: Integer;
+begin
+  // Inno asks for this BEFORE DeinitializeSetup. Finish rollback first.
+  RollbackDeployment;
+  Result := 0;
+  if Prepared and not Completed then begin
+    if RollbackFailed then Result := 21 else Result := 20;
   end;
 end;
 
 procedure DeinitializeSetup;
 begin
-  if Prepared and not Completed then begin
-    if RunHelper('rollback') then begin
-      if not Upgrading then begin
-      RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{DA975784-DC84-48EF-9A47-F60C0C969280}_is1');
-      DeleteFile(ExpandConstant('{userprograms}\SmartZip\SmartZip 设置.lnk'));
-      DeleteFile(ExpandConstant('{userprograms}\SmartZip\卸载 SmartZip.lnk'));
-      DeleteFile(ExpandConstant('{userprograms}\SmartZip\检查更新.lnk'));
-      RemoveDir(ExpandConstant('{userprograms}\SmartZip'));
-      end;
-    end else begin
-      RollbackFailed := True;
-      SuppressibleMsgBox('回滚未完成，程序已停止删除文件。请保留错误日志并联系开发者检查；本次安装未成功。', mbError, MB_OK, IDOK);
-    end;
-  end;
+  // Also covers native Inno failures/cancellation before ssPostInstall.
+  // Never retry a failed rollback automatically or discard its recovery files.
+  RollbackDeployment;
+  if RollbackFailed then
+    SuppressibleMsgBox('回滚未完成，程序已停止删除文件。请保留错误日志并联系开发者检查；本次安装未成功。', mbError, MB_OK, IDOK);
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

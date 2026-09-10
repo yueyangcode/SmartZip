@@ -26,7 +26,9 @@ internal sealed record BackupValue(string Name,RegistryValueKind Kind,string[] D
 internal sealed record BackupKey(string Path,BackupValue[] Values);
 internal sealed record BackupFile(string Name,byte[]? Data);
 internal sealed record UpgradeBackupData(string Nonce,BackupKey[] Keys,BackupFile[] Files);
-[JsonSerializable(typeof(UpgradeBackupData))]
+// The SDK 8 fast path writes a null byte[] as empty Base64; rollback must
+// distinguish an absent file from an existing zero-byte file. No reflection.
+[JsonSerializable(typeof(UpgradeBackupData),GenerationMode=JsonSourceGenerationMode.Metadata)]
 internal partial class UpgradeBackupContext:JsonSerializerContext{}
 
 internal static class UpgradeBackup {

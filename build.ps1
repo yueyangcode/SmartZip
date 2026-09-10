@@ -1,4 +1,4 @@
-param([ValidateSet('Test','Release')][string]$Signing='Test',[string]$Version='0.1.0.11',
+param([ValidateSet('Test','Release')][string]$Signing='Test',[string]$Version='0.1.0.15',
  [ValidateSet('','after-stage','after-package','before-commit','after-state')][string]$FaultAt='')
 $ErrorActionPreference='Stop'
 $parsedVersion=$null
@@ -39,9 +39,12 @@ $llvm="$root\.tools\llvm-mingw-20260826-ucrt-x86_64\bin"
 $sdk="$root\.tools\sdk\c\bin\10.0.26100.0\x64"
 $inno="$root\.tools\inno\tools\ISCC.exe"
 & "$root\tests\DirectoryWizard.Tests.ps1"
+& "$root\tests\FontWizard.Tests.ps1"
+& "$root\tests\CommitLifecycle.Tests.ps1"
 $payload="$root\build\payload"
 New-Item -ItemType Directory -Force -Path $payload,"$payload\Engine","$payload\Backend","$payload\Assets","$payload\Licenses","$payload\Sources","$root\build\identity","$root\build\tests","$root\dist","$root\.private" | Out-Null
 & "$root\packaging\MakeAssets.ps1" -Destination "$payload\Assets"
+& "$root\tests\IconAssets.Tests.ps1" -Assets "$payload\Assets"
 if(!(Test-Path downloads\7zr.exe)){Invoke-WebRequest 'https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe' -OutFile downloads\7zr.exe}
 & "$root\downloads\7zr.exe" x -y "-o$payload\Backend" "$root\downloads\7zip.exe" 7z.exe 7zG.exe 7zFM.exe 7z.dll License.txt 7-zip.chm 'Lang\*' | Out-Host
 CheckExit '7-Zip payload extraction'
@@ -90,7 +93,7 @@ foreach($pair in @(@('AppxManifest.xml.in',"$root\build\identity\AppxManifest.xm
   (Get-Content "packaging\$($pair[0])" -Raw).Replace('@PUBLISHER@',$xmlPublisher).Replace('@VERSION@',$Version) | Set-Content -LiteralPath $pair[1] -Encoding utf8
 }
 Copy-Item "$payload\Assets" "$root\build\identity" -Recurse -Force
-'1 24 "launcher.manifest"' | Set-Content build\launcher.rc -Encoding ascii
+@('1 24 "launcher.manifest"', '1 ICON "payload/Assets/SmartZip.ico"') | Set-Content build\launcher.rc -Encoding ascii
 & "$llvm\llvm-windres.exe" -I "$root\build" "$root\build\launcher.rc" -O coff -o "$root\build\launcher.res.o"
 CheckExit 'launcher resource'
 $common=@('-std=c++17','-O2','-static','-DUNICODE','-D_UNICODE','-D_WIN32_WINNT=0x0A00','-Wl,--dynamicbase','-Wl,--nxcompat')
@@ -107,8 +110,8 @@ static constexpr wchar_t CertificateSubject[]=L"$publisher";
 static constexpr FILETIME CertificateNotBefore={ $($beforeFileTime -band 4294967295L), $($beforeFileTime -shr 32) };
 static constexpr FILETIME CertificateNotAfter={ $($afterFileTime -band 4294967295L), $($afterFileTime -shr 32) };
 "@ | Set-Content build\CertificateIdentity.g.h -Encoding utf8
-'1 24 "certificate-helper.manifest"'|Set-Content build\certificate-helper.rc -Encoding ascii
-& "$llvm\llvm-windres.exe" -I "$root\packaging" build\certificate-helper.rc -O coff -o build\certificate-helper.res.o
+@('1 24 "certificate-helper.manifest"', '1 ICON "payload/Assets/SmartZip.ico"')|Set-Content build\certificate-helper.rc -Encoding ascii
+& "$llvm\llvm-windres.exe" -I "$root\packaging" -I "$root\build" build\certificate-helper.rc -O coff -o build\certificate-helper.res.o
 CheckExit 'certificate helper manifest'
 if($Signing -eq 'Test'){
 & "$llvm\x86_64-w64-mingw32-clang++.exe" @common -I build -municode -mwindows src\CertificateTrustHelper.cpp build\certificate-helper.res.o -o "$payload\CertificateTrustHelper.exe" -lcrypt32 -ladvapi32 -lshell32
@@ -189,6 +192,9 @@ if($Signing -eq 'Release'){& "$sdk\signtool.exe" verify /pa "$root\dist\$setupNa
 if($Signing -eq 'Test' -and !$FaultAt){& "$root\tests\ReleaseGate.Tests.ps1" -TestInstaller "$root\dist\$setupName" -Version $Version}
 dotnet run --project tests\UpdateTests -c Release -- "$root\dist\$setupName" $Version "$payload\Identity.cer" "$root\build\tests\ActivityTests.exe"
 CheckExit 'offline updater security tests (no downloads or installation)'
+$iconExecutables=@("$payload\SmartZip.exe","$payload\DeploymentHelper.exe","$root\dist\$setupName")
+if($Signing -eq 'Test'){$iconExecutables+="$payload\CertificateTrustHelper.exe"}
+& "$root\tests\IconAssets.Tests.ps1" -Assets "$payload\Assets" -Executables $iconExecutables
 Get-Item "dist\$setupName" | Select-Object FullName,Length
 Get-FileHash "dist\$setupName" -Algorithm SHA256 | Format-List Hash
 Write-Host 'BUILD ONLY. Installer has NOT been executed. No package or certificate was registered.'

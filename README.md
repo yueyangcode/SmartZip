@@ -1,70 +1,50 @@
-# SmartZip
+<p align="center">
+  <img src="packaging/Assets/SmartZip.png" width="112" alt="SmartZip logo">
+</p>
+<h1 align="center">SmartZip</h1>
+<p align="center">Windows 11 一级右键菜单里的智能解压。</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/Windows_11-x64-0078D4?style=flat-square" alt="Windows 11 x64">
+  <a href="docs/RELEASE.md"><img src="https://img.shields.io/badge/0.1.0.15-draft-F59E0B?style=flat-square" alt="0.1.0.15 development draft"></a>
+  <a href="docs/BUILD-0.1.0.15.md"><img src="https://img.shields.io/badge/Installer-14.45_MiB-6366F1?style=flat-square" alt="Installer: 14.45 MiB"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/Source_license-MIT-22C55E?style=flat-square" alt="Project source: MIT license"></a>
+</p>
+<p align="center">
+  <strong>简体中文</strong> · <a href="README.en.md">English</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a>
+</p>
 
-Windows 11 原生现代右键菜单中的「智能解压」。内置独立的 7-Zip 后端，无需另装 WinRAR 或 7-Zip，不改变现有压缩软件和旧式菜单。
+## 能做什么
 
-## 当前状态
+- **右键即解压**：选择压缩包，点击「智能解压」，无需“显示更多选项”。
+- **内置解压后端**：无需另装 7-Zip 或 WinRAR，可与已有压缩软件共存。
+- **支持常用格式与多选**：ZIP、RAR、7Z、CAB、TAR、GZ、GZIP、BZ2 及支持的数字分卷；支持中文、空格和特殊字符路径。
 
-**2026-09-10：仍暂停公开发布。** 已验收的功能基线为 **0.1.0.14**：四个沙盒故障回滚场景均已验证通过，其中第三项为补充日志复核，原自动 FAIL 记录保留。随后正常升级到 `.14` 成功，12 个解压场景的文件内容通过核验，用户确认一级菜单、过滤及中文显示和流畅度正常。正常卸载清理及菜单消失已确认；卸载后重装的部署日志、Package/注册和证书检查通过，配置未变，用户确认重装后全部 case 无问题。重装位于 `C:\SmartZip`，实际目录文件清单超出本轮采集器范围，证据边界见 [本轮沙盒记录](docs/SANDBOX-0.1.0.14-ACCEPTANCE.md)。
+## 获取与使用
 
-**0.1.0.15 新图标测试版已通过沙盒覆盖升级核验。** `.14 → .15` 的 Package/COM、提交状态、文件与配置/证书保留检查通过；用户确认安装向导、开始菜单、一级右键菜单新图标和一次 ZIP 解压正常。详见[本版验收记录](docs/SANDBOX-0.1.0.15-ACCEPTANCE.md)。本版没有改变解压、升级回滚或证书权限逻辑，不将 `.14` 的完整测试直接记成 `.15` 重测通过。图标来源和资源生成方式见[图标说明](design/logo/README.md)。
+**当前是 `0.1.0.15` 开发测试草稿，尚无公开安装包。** 因此仓库首页会显示“未发布任何版本”。[发行版页面](https://github.com/yueyangcode/SmartZip/releases) · [当前状态与校验值](docs/RELEASE.md)
 
-- **0.1.0.8**：用户反馈本机及另一台 Windows 11 测试通过，见 [验收记录](docs/TESTED-BASELINE.md)。
-- **0.1.0.9**：用户已反馈可以覆盖升级；故障恢复与升级后卸载不据此推定通过。
-- **0.1.0.10**：新增确认后下载、验签、后台更新。实际从 0.1.0.8 升级时遇到 `0x80073D02`；旧 Package 留有 `Modified, NeedsRemediation`，不能将日志中的回滚完成视为健康恢复。
-- **0.1.0.11（历史正常安装验收）**：构建与离线自动化测试通过；本机从已恢复健康的 0.1.0.8 升级成功，安装日志和 Package 健康检查已确认。用户另反馈本机卸载、重装和使用正常；未独立采集该轮完整前后快照。后续实际故障回滚发现缺陷，不能继续作为发布候选。详见 [验收记录](docs/TESTED-BASELINE.md)。
-- **0.1.0.11 第二台电脑**：用户反馈另一台 Windows 11 验证无问题；未独立采集该机具体 Build、安装前快照和逐项日志。
-- 真实故障回滚：`.11` 与 `.13` 均为前两项通过、第三项失败、第四项停止；`.13` 多出的空文件已在 `.14` 修复。`.14` 四项均已验证通过（第三项补证复核，原自动 FAIL 保留）。GitHub 下载到静默安装的完整更新链仍待验收，手动正常升级不代表该链路已经通过。
-- 正式可信签名尚未提供；公共 WinGet 包尚未提交。GitHub 发布准备仅为开发版草稿。
+仅支持 **Windows 11 x64，Build 22621 或更新**。取得测试包后：
 
-历史安装包与失败证据保留不覆盖，哈希见各版本构建说明。功能验收包 `SmartZipSetup-0.1.0.14-test.exe` 保留；新图标候选为 `SmartZipSetup-0.1.0.15-test.exe`，尚未公开发布。发布草稿不是公开下载渠道。
+1. 核对 SHA-256，运行 `SmartZipSetup-0.1.0.15-test.exe`。
+2. 选择父目录，向导会补齐 `SmartZip` 文件夹；软件仅为当前用户安装。
+3. 右键压缩包 → **智能解压**。设置与正常卸载入口在开始菜单的 SmartZip 文件夹中。
 
-## 使用与安装
+> **测试证书提示：** 首次安装须同意由证书助手申请管理员权限，将公钥加入 `LocalMachine\TrustedPeople`；不进入 Root、不导入私钥。卸载仅按项目所有权清理，安装前已有的证书不接管。请勿关闭系统安全保护。
 
-支持 Windows 11 x64（Build 22621 或更新版本）。双击 EXE 安装；浏览选择父目录后，向导自动补齐 SmartZip 文件夹并显示最终路径。安装限当前用户可写的本地 NTFS 固定磁盘。
+## 升级与注意事项
 
-测试版首次安装需同意专用测试证书：仅证书助手请求管理员权限，将公钥加入 LocalMachine\\TrustedPeople，不进入 Root、不导入私钥。软件及 Package 为 per-user。安装前已有的证书不接管；本项目创建的证书按所有权和其他用户使用情况清理。
+- 健康旧测试版支持同目录、同证书升级；登记不完整或卸载报错时请保留日志并反馈，勿强制清理。
+- 目前没有公共 WinGet 包。更新器忽略草稿和 Pre-release，发布测试版不会弹出自动更新提示。
+- `.15` 的覆盖升级已有日志核验，新图标和 ZIP 解压获用户确认。普通 UAC 环境及远程自动更新链仍待验证。[验收详情](docs/SANDBOX-0.1.0.15-ACCEPTANCE.md)
 
-右键 ZIP、RAR、7Z、CAB、BZ2、GZ、GZIP、TAR 或支持的分卷文件，点击「智能解压」。支持多选及 Unicode/中文、空格、特殊字符路径。普通文件、真实文件夹和压缩包混合普通文件的选择不显示该命令。新版 Context menu 设置页是否存在由 Windows 版本与功能推出状态决定，本软件不会开启 Windows Feature。
+## 开发与许可
 
-开始菜单提供「SmartZip 设置」「检查更新」「卸载 SmartZip」。使用时检查更新，每天最多一次，也可手动触发；不增加常驻服务或计划任务。只检查本仓库最新正式 Release，忽略草稿与预发布。
-
-发现新版后提供「立即更新 / 稍后提醒 / 跳过此版本」及更新说明、大小。只有点击「立即更新」才下载，验证固定仓库地址、文件大小、GitHub SHA-256 和 Windows 数字签名，并锁定当前签名者。验证通过后等待正在解压的任务结束，再后台安装；保留目录/配置、不强行关闭 Explorer、不自动重启。下载/等待阶段可取消，进入安装后不强制中断。详见 [更新器说明](docs/UPDATER.md)。
-
-当前仍是测试签名包，测试版到正式证书切换不能自动更新；正式版首次公开更新需要可信签名的 x64 Release 安装包。没有公开新版时不会制造更新提示。
-
-## 升级和卸载
-
-从 0.1.0.9 起，安装器支持从身份完整的 0.1.0.8 或更新旧版本进行**同目录、同证书**升级，自动使用原安装位置，不需要先卸载。目标版本必须更高；拒绝同版重装、降级、目录迁移及不完整安装，不覆盖无有效产品身份的同名文件夹。
-
-新版写入 Versions 子目录，旧版及用户配置不动。失败恢复先还原旧 Package，再恢复产品状态、卸载文件和快捷方式；恢复被系统拒绝时保留文件/备份并报告失败。旧版本目录保留到正常卸载，暂不自动清除被 Shell 占用的 DLL。断电/强杀恢复不承诺自动完成。
-
-从 0.1.0.11 起，预检查、提交和回滚校验只读取 Package 健康状态、COM 注册及菜单声明，不主动激活右键 DLL。真实占用仍可能使 Windows 拒绝更新；安装器不强制关闭程序、不延迟注册后假报成功。回滚时即使旧版本号未变，也会在状态异常时尝试重新部署保存且校验过的旧包；若仍不健康则保留恢复资料、报告回滚未完成。预检查发现安装前已异常的 Package 会直接停止，不自动修复既有故障。
-
-通过正常卸载入口卸载；配置仍保留于原 UserData 目录。不要手动删除安装目录或使用强制清理代替正常卸载。不会删除原版 SmartZip、旧 UnZip 菜单、用户已有的 7-Zip/WinRAR。
-
-升级的真实验收步骤和故障测试边界见 [升级验收](docs/UPGRADE-TESTS.md)。
-
-## 从源码构建
-
-开发机需要 Windows x64、PowerShell 7.4+、.NET SDK 8.0.425，首次构建需联网下载锁定版本及 SHA-256 的依赖。终端用户不需要开发工具。
+Windows 构建环境：PowerShell 7.4+、.NET SDK 8.0.425；主要使用 C++、C#、AutoHotkey。
 
 ```powershell
 pwsh -File .\build.ps1 -Signing Test -Version 0.1.0.15
-Get-FileHash .\dist\SmartZipSetup-0.1.0.15-test.exe -Algorithm SHA256
 ```
 
-输出单文件安装器；构建不安装软件、Package 或证书。脚本同时运行原生参数、COM 文件筛选、目录页、源生成 JSON、跨进程管道、升级回滚顺序及发布安全门禁测试。模拟/独立 COM 测试不代表 Explorer 或真实安装验收。VS Solution 调用同一构建脚本。
+[构建说明](docs/BUILD-0.1.0.15.md) · [更新器设计](docs/UPDATER.md) · [反馈问题](https://github.com/yueyangcode/SmartZip/issues)
 
-正式构建入口为 `-Signing Release`，要求可信签名材料，没有自签名回退。正式版不包含证书提权助手，也不自动导入证书。签名、GitHub 草稿与 WinGet 清单流程见 [发布说明](docs/RELEASE.md)。测试证书到正式证书的迁移不属于本版自动升级范围。
-
-## 结构与许可证
-
-原生 x64 IExplorerCommand → 同目录 SmartZip.exe → SmartZip AHK 引擎 → 私有 7-Zip 后端。不使用 Contextmenu.exe、Ctrl+C、cmd.exe 或 PATH 查找。
-
-- 本项目及 SmartZip 上游：MIT。
-- AutoHotkey：GPL，另含 PCRE 等许可。
-- 7-Zip：LGPL/BSD/unRAR 等许可及限制。
-
-许可证、通知和对应上游源码随安装包提供，详见 [ThirdPartyNotices](ThirdPartyNotices.md)。`.private` 私钥、密码文件及本机日志不得提交或分享。
-
-历史故障和早期设计见 [test7 历史说明](docs/TEST7-README-HISTORY.md)，不能用旧测试结果代表新版验收。
+本项目源码采用 [MIT](LICENSE)。内置组件另有许可证及源码提供要求，见[第三方声明](ThirdPartyNotices.md)。项目基于 [vvyoko/SmartZip](https://github.com/vvyoko/SmartZip)，是独立集成项目。
